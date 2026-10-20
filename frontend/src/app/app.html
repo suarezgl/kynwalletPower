@@ -1,0 +1,7 @@
+<app-auth-layout>
+  @if (sessions.session()) {
+    <app-welcome />
+  } @else {
+    <app-login-form />
+  }
+</app-auth-layout>

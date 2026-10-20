@@ -1,8 +1,0 @@
-node_modules
-dist
-build
-coverage
-specs
-.specify
-.claude
-package-lock.json

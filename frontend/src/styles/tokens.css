@@ -1,0 +1,37 @@
+/* Tokens del diseño de Figma (archivo f7uDsv8sh6ZOtK2OitTqtg, nodo 2:2). Fuente única de estilo. */
+:root {
+  /* Variables de Figma */
+  --neutral-0: #ffffff;
+  --neutral-300: #d7d9e6;
+  --neutral-400: #a9abc2;
+  --neutral-500: #8a8ca8;
+  --neutral-700: #3d3f5c;
+  --neutral-900: #16182c;
+  --brand-500: #ff6b3d;
+  --brand-600: #ef5226;
+
+  /* Tokens accesibles derivados (research.md R3, WCAG 2.1 AA). Aprobados en /speckit-implement (B2). */
+  --brand-700: #d04721; /* 4.56:1 sobre blanco: botón principal y enlaces */
+  --brand-800: #b03b1b; /* hover del botón principal */
+  --neutral-600: #73748b; /* 4.57:1: textos secundarios y placeholder */
+  --neutral-border: #92949c; /* 3.03:1: bordes de controles */
+  --danger-600: #c62828; /* 5.62:1: mensajes de error */
+  --danger-50: #fdecea;
+  --neutral-50: #f4f5f9;
+
+  /* Valores sin variable en Figma */
+  --brand-gradient: linear-gradient(121.19deg, #ff8a65 0%, #ef5226 70.71%);
+  --card-surface: rgba(255, 255, 255, 0.16);
+  --card-border: rgba(255, 255, 255, 0.35);
+  --card-chip: rgba(255, 217, 128, 0.9);
+  --on-brand-muted: rgba(255, 255, 255, 0.85);
+  --on-brand-soft: rgba(255, 255, 255, 0.9);
+
+  --radius-control: 12px;
+  --radius-card: 22px;
+  --radius-checkbox: 6px;
+  --control-height: 52px;
+  --social-height: 48px;
+
+  --focus-ring: 0 0 0 2px var(--neutral-0), 0 0 0 4px var(--neutral-900);
+}

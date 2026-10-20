@@ -22,6 +22,12 @@ panel de formulario ("Bienvenido de nuevo", campos Correo electrónico y Contras
 visibilidad, "Recordarme", "¿Olvidaste tu contraseña?", botón "Iniciar sesión", acceso con Google
 y Apple, y enlace "Regístrate").
 
+**Referencia visual adicional**: imagen adjunta a la solicitud. Define el look & feel: panel de marca
+con gradiente naranja, logo KynWallet, titular "Tu dinero, sin fronteras.", subtítulo "Envía, recibe
+y paga en segundos. Una billetera pensada para tu día a día." y tarjeta "Kyn Card"; panel de
+formulario blanco con la misma jerarquía tipográfica y de espaciado. Los tonos exactos del naranja
+no están medidos; deben validarse en la fase de diseño (ver FR-020).
+
 ## Clarifications
 
 ### Session 2026-10-14
@@ -108,8 +114,8 @@ verifican los mensajes asociados a cada campo.
 2. **Given** un correo sin formato válido (por ejemplo, "usuario@" o "usuario.com"), **When** el
    usuario sale del campo o envía el formulario, **Then** se muestra "Ingresa un correo
    electrónico válido".
-3. **Given** una contraseña con menos de 8 caracteres, **When** el usuario envía el formulario,
-   **Then** se muestra "La contraseña debe tener al menos 8 caracteres" y no se ejecuta la
+3. **Given** una contraseña con menos de 15 caracteres, **When** el usuario envía el formulario,
+   **Then** se muestra "La contraseña debe tener al menos 15 caracteres" y no se ejecuta la
    autenticación.
 4. **Given** un campo con mensaje de validación, **When** el usuario corrige el valor, **Then**
    el mensaje de ese campo desaparece.
@@ -184,16 +190,25 @@ funcional (YAGNI).
 - **FR-001**: La pantalla DEBE reproducir la estructura, textos y jerarquía visual del diseño de
   referencia de Figma (`01 · Login`), aplicando el sistema de diseño corporativo cuando exista.
 - **FR-002**: La pantalla DEBE permitir ingresar un correo electrónico y una contraseña.
-- **FR-003**: El sistema DEBE validar que el correo sea obligatorio, tenga formato de correo
-  válido y no exceda 254 caracteres.
-- **FR-004**: El sistema DEBE validar que la contraseña sea obligatoria y tenga entre 8 y 128
-  caracteres.
+- **FR-003**: El sistema DEBE validar que el correo sea obligatorio, no contenga espacios ni
+  caracteres de control, tenga formato de correo válido (parte local, símbolo "@" y dominio con al
+  menos un punto y una extensión de 2 o más letras) y no exceda 254 caracteres. El correo se
+  recorta de espacios periféricos antes de validar.
+- **FR-004**: El sistema DEBE validar que la contraseña sea obligatoria y tenga entre 15 y 128
+  caracteres, conforme a NIST SP 800-63B-4 para autenticación de un solo factor. No DEBE aplicar
+  reglas de composición (mayúsculas, símbolos, números obligatorios), DEBE aceptar espacios y
+  caracteres Unicode, y NO DEBE recortar la contraseña.
 - **FR-005**: El sistema DEBE mostrar los mensajes de validación junto al campo correspondiente,
-  al salir del campo y al intentar enviar, y DEBE ocultarlos cuando el valor se corrija.
+  al salir del campo y al intentar enviar, y DEBE ocultarlos cuando el valor se corrija. Al
+  intentar enviar con errores, DEBE mostrar además un resumen de errores del formulario en la parte
+  superior, con enlaces que llevan al campo con error.
 - **FR-006**: El sistema NO DEBE ejecutar la autenticación mientras existan errores de
   validación.
-- **FR-007**: El sistema DEBE simular la autenticación comparando las credenciales ingresadas
-  contra un conjunto de cuentas de demostración, sin servicios backend ni base de datos.
+- **FR-007**: La invocación a la API de autenticación DEBE estar mockeada. El mock DEBE respetar
+  el contrato REST del proyecto (Constitución, Principio VII): recibe correo y contraseña, responde
+  con éxito (nombre del titular y un token de acceso simulado tipo JWT, mantenido solo en memoria)
+  o con credenciales incorrectas. La comparación se hace contra un conjunto de cuentas de
+  demostración, sin servicios backend reales ni base de datos.
 - **FR-008**: La autenticación simulada DEBE incluir una espera breve (aprox. 1 segundo) con
   indicador de carga, durante la cual el envío queda deshabilitado.
 - **FR-009**: Ante credenciales correctas, el sistema DEBE reemplazar el formulario por una vista
@@ -218,11 +233,23 @@ funcional (YAGNI).
   mostrarse según el diseño y, al activarse, informar "Función no disponible en esta
   demostración".
 - **FR-017**: La casilla "Recordarme" DEBE mostrarse y cambiar de estado, sin persistir datos.
-- **FR-018**: La pantalla DEBE adaptarse a anchos desde 320 px hasta escritorio sin
-  desplazamiento horizontal; en anchos reducidos el panel de marca puede simplificarse u
-  ocultarse manteniendo el logo visible.
+- **FR-018**: La pantalla DEBE ser 100 % responsive y usable en los siguientes rangos, en
+  orientación vertical y horizontal, sin desplazamiento horizontal:
+  - Smartphone: 320 px a 767 px (referencia: 360 × 640, 390 × 844, 430 × 932).
+  - Tablet: 768 px a 1023 px (referencia: 768 × 1024, 820 × 1180).
+  - Escritorio: 1024 px en adelante (referencia: 1280 × 800, 1440 × 900, 1920 × 1080).
+  En smartphone el panel de marca se oculta o se reduce, manteniendo el logo visible, y el
+  formulario ocupa todo el ancho. En tablet y escritorio se muestra la distribución en dos paneles
+  del diseño.
 - **FR-019**: Los errores inesperados DEBEN mostrarse con un mensaje comprensible para el usuario,
   sin revelar detalles técnicos.
+- **FR-020**: La apariencia DEBE seguir la referencia visual adjunta (colores, gradiente naranja,
+  estructura y jerarquía del layout). Todo texto y control sobre el naranja, incluido el botón
+  "Iniciar sesión", DEBE cumplir un contraste mínimo de 4,5:1 (texto normal) y 3:1 (texto grande y
+  componentes de interfaz); si el tono de referencia no cumple, DEBE ajustarse el tono y
+  documentarse.
+- **FR-021**: Las respuestas de la API mockeada DEBEN devolverse en menos de 5 segundos
+  (Constitución, Principio VIII), incluso cuando se simula la espera de carga.
 
 ### Key Entities
 
@@ -249,6 +276,14 @@ funcional (YAGNI).
 - **SC-006**: La revisión visual frente al diseño de Figma no detecta diferencias en textos,
   orden de elementos ni jerarquía visual.
 - **SC-007**: El análisis de secretos no detecta credenciales en el código fuente versionado.
+- **SC-008**: La pantalla se verifica sin desplazamiento horizontal ni elementos cortados en los
+  nueve tamaños de referencia de FR-018 (tres de smartphone, dos de tablet y tres de escritorio),
+  con el 100 % de las funciones operables en cada uno.
+- **SC-009**: El 100 % de las respuestas de la autenticación mockeada se recibe en menos de 5
+  segundos.
+- **SC-010**: Las validaciones de correo y contraseña rechazan el 100 % de los casos inválidos
+  definidos en las pruebas (incluidos espacios, longitudes límite y formatos mal formados) y
+  aceptan los casos válidos.
 
 ## Assumptions
 
@@ -257,13 +292,17 @@ funcional (YAGNI).
   sesión") es el final del flujo.
 - Existe al menos una cuenta de demostración (por ejemplo, la del titular mostrado en el diseño,
   "Steven Luna"), definida en configuración externa al código.
-- La política de contraseña (8 a 128 caracteres) aplica solo a la validación de formato; la
-  demo no implementa reglas de complejidad adicionales.
+- La política de contraseña (15 a 128 caracteres, sin reglas de composición) sigue NIST SP
+  800-63B-4 para autenticación de un solo factor. Solo se aplica a la validación de formato; la
+  demo no implementa bloqueo ni complejidad adicional.
 - El bloqueo por intentos fallidos, la recuperación de contraseña, el registro, el acceso con
   Google/Apple y la persistencia de "Recordarme" quedan fuera del alcance; sus elementos se
   muestran solo por fidelidad al diseño.
 - El idioma de la interfaz es español.
 - No existen BRD ni ARD para esta funcionalidad; si se incorporan, esta especificación DEBE
   alinearse con ellos (Constitución, Principio VI).
-- El diseño de referencia corresponde a escritorio (1440 × 1024); la adaptación a móvil se
-  deriva del mismo diseño.
+- El diseño de referencia (Figma) y la imagen adjunta corresponden a escritorio (1440 × 1024); la
+  adaptación a smartphone y tablet se deriva de ellos según los rangos de FR-018.
+- Las credenciales de demostración, el mock de la API de autenticación y el token simulado viven
+  en configuración o en una capa de simulación aislada, para poder reemplazarlos por la API real
+  sin cambiar la pantalla.

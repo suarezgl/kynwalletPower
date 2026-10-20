@@ -84,88 +84,135 @@ antes de integrar cambios.
 *Justificación*: la seguridad incorporada desde el diseño es más efectiva y menos costosa que
 la remediación posterior.
 
-### VI. Conformidad con BRD y ARD
+### VI. Conformidad con BRD, ARD y ADR
 
-6.1. Cuando exista un BRD (Business Requirements Document), toda implementación DEBE respetar
+6.1. Cuando exista un BRD (Business Requirements Document, referido también como BDR), toda
+implementación DEBE respetar
 las reglas de negocio allí definidas; NO DEBE implementarse una regla de negocio contradictoria
 sin una actualización aprobada del BRD.
-6.2. Cuando exista un ARD (Architecture Requirements Document), toda implementación DEBE
-cumplir sus requisitos y restricciones arquitectónicas.
-6.3. Las especificaciones y planes DEBEN referenciar las secciones del BRD y ARD aplicables.
-6.4. Toda desviación del BRD o ARD DEBE documentarse, justificarse y aprobarse por el
+6.2. Cuando exista un ARD (Architecture Requirements Document) o un ADR (Architecture Decision
+Record), toda implementación DEBE
+cumplir sus requisitos, restricciones y decisiones arquitectónicas.
+6.3. Las especificaciones y planes DEBEN referenciar las secciones del BRD, ARD y ADR aplicables.
+6.4. Toda desviación del BRD, ARD o ADR DEBE documentarse, justificarse y aprobarse por el
 responsable del documento antes de su implementación.
-6.5. En caso de conflicto, el BRD y el ARD prevalecen sobre las especificaciones de feature;
-esta constitución prevalece sobre ambos en materia de prácticas de ingeniería.
+6.5. En caso de conflicto, el BRD, el ARD y el ADR prevalecen sobre las especificaciones de feature;
+esta constitución prevalece sobre todos ellos en materia de prácticas de ingeniería.
 
 *Justificación*: garantiza que el software implemente el negocio y la arquitectura acordados.
 
+### VII. Arquitectura de Servicios: API REST, BIAN y JWT
+
+7.1. La separación de responsabilidades por capas (presentación, aplicación, dominio e
+infraestructura) DEBE mantenerse en cada servicio y componente; ninguna capa DEBE asumir
+responsabilidades de otra.
+7.2. Toda comunicación entre clientes, componentes y servicios DEBE realizarse mediante API REST.
+NO DEBE utilizarse otro mecanismo de intercambio entre sistemas sin aprobación documentada.
+7.3. Las APIs DEBEN diseñarse conforme al estándar BIAN (Banking Industry Architecture Network):
+sus dominios de servicio, operaciones y nomenclatura DEBEN corresponder a dicho estándar, y sus
+contratos DEBEN documentarse y versionarse.
+7.4. Todas las APIs DEBEN estar protegidas con tokens JWT. Toda solicitud a un recurso protegido
+DEBE presentar un token cuya firma, emisor, audiencia y vigencia hayan sido verificados en el
+servidor; NO DEBEN aceptarse tokens expirados, sin firma verificable ni firmados con algoritmos
+no aprobados. Los tokens NO DEBEN almacenarse en el código fuente ni registrarse en logs.
+7.5. Los controladores REST DEBEN limitarse a validar la entrada, invocar casos de uso y
+transformar respuestas (DTO); NO DEBEN contener reglas de negocio.
+
+*Justificación*: estandariza la integración entre componentes conforme a BIAN, garantiza la
+interoperabilidad y protege el acceso a los servicios mediante autenticación verificable.
+
+### VIII. Rendimiento de las APIs
+
+8.1. Toda respuesta de API DEBE completarse en menos de 5 segundos (< 5 s) en condiciones de
+operación representativas.
+8.2. El cumplimiento del tiempo de respuesta DEBE verificarse mediante pruebas automatizadas de
+integración o de rendimiento en el pipeline; una API que supere el umbral DEBE tratarse como
+defecto.
+8.3. Las operaciones cuya ejecución pueda superar el umbral DEBEN diseñarse de forma asíncrona,
+respondiendo de inmediato con un estado consultable, y NO DEBEN bloquear la solicitud del cliente.
+
+*Justificación*: la latencia afecta directamente la experiencia de usuario y la confiabilidad
+percibida del servicio.
+
 ## Gestión de Dependencias
 
-7.1. Se PERMITE el uso de frameworks y librerías externas siempre que cumplan, de forma
+9.1. Se PERMITE el uso de frameworks y librerías externas siempre que cumplan, de forma
 verificable, todas las condiciones siguientes:
    a. Licencia compatible con la política corporativa y con el modelo de distribución del
       proyecto; las licencias no aprobadas DEBEN ser autorizadas antes de su incorporación.
    b. Mantenimiento activo, evidenciado por publicaciones o correcciones de seguridad
       recientes y un mantenedor identificable.
-   c. Ausencia de vulnerabilidades críticas o altas conocidas, salvo mitigación documentada
+   c. Ausencia de vulnerabilidades críticas sin remediación: NO DEBE usarse una versión que tenga
+      vulnerabilidades críticas sin corrección disponible; cuando exista corrección, DEBE aplicarse
+      sin demora. Las vulnerabilidades altas DEBEN corregirse o contar con una mitigación documentada
       y aprobada con fecha de revisión.
-7.2. Toda dependencia DEBE declararse con versión fijada o acotada y bloquearse mediante
+   d. Soporte vigente: la versión utilizada DEBE contar con soporte activo del proveedor o
+      mantenedor, incluyendo correcciones de seguridad; NO DEBEN usarse versiones sin soporte.
+9.2. Toda dependencia DEBE declararse con versión fijada o acotada y bloquearse mediante
 archivo de bloqueo versionado cuando el ecosistema lo soporte.
-7.3. Las dependencias DEBEN analizarse automáticamente (vulnerabilidades y licencias) en cada
-integración; un hallazgo crítico sin mitigación aprobada DEBE bloquear la integración.
-7.4. Cada nueva dependencia DEBE justificarse frente a alternativas existentes en el proyecto
+9.3. Las dependencias DEBEN analizarse automáticamente (vulnerabilidades y licencias) en cada
+integración; un hallazgo crítico sin remediación DEBE bloquear la integración.
+9.4. Cada nueva dependencia DEBE justificarse frente a alternativas existentes en el proyecto
 (Principio IV) y aislarse tras abstracciones cuando afecte al dominio (Principio III).
-7.5. Las dependencias sin uso, obsoletas o sin soporte DEBEN eliminarse o reemplazarse.
+9.5. Las dependencias sin uso, obsoletas o sin soporte DEBEN eliminarse o reemplazarse.
 
 ## Estándares de Calidad
 
-8.1. **Pruebas automatizadas**: DEBEN existir pruebas unitarias, de integración y de contrato
-proporcionales al riesgo; la cobertura del código nuevo o modificado DEBE cumplir el umbral
-corporativo definido en el pipeline, y NO DEBE disminuir la cobertura global sin aprobación.
-8.2. **Convenciones de código**: DEBEN aplicarse las guías de estilo y nomenclatura del
+10.1. **Pruebas automatizadas**: DEBEN existir pruebas unitarias, de integración y de contrato
+proporcionales al riesgo. La cobertura combinada de pruebas unitarias y de integración DEBE ser
+de al menos 80 % del código del proyecto, verificada en el pipeline; la cobertura del código
+nuevo o modificado DEBE cumplir ese mismo umbral y NO DEBE disminuir la cobertura global sin
+aprobación.
+10.2. **Convenciones de código**: DEBEN aplicarse las guías de estilo y nomenclatura del
 lenguaje adoptado, verificadas mediante formateadores y analizadores estáticos automatizados;
 el código DEBE integrarse sin errores de análisis.
-8.3. **Documentación**: DEBEN documentarse las APIs públicas, contratos, decisiones
+10.3. **Documentación**: DEBEN documentarse las APIs públicas, contratos, decisiones
 arquitectónicas relevantes (ADR), instrucciones de construcción, configuración y despliegue;
-la documentación DEBE actualizarse en el mismo cambio que la modifica.
-8.4. **Accesibilidad**: toda interfaz de usuario DEBE cumplir como mínimo WCAG 2.1 nivel AA,
-verificado mediante pruebas automatizadas y revisión.
-8.5. **Reutilización de componentes**: DEBEN reutilizarse componentes, librerías y servicios
+la documentación DEBE actualizarse en el mismo cambio que la modifica. Cada proyecto, módulo o
+paquete DEBE contar con un README.md actualizado que describa su propósito, requisitos previos,
+instalación, ejecución, pruebas y configuración; la documentación de los README NO es opcional y
+su ausencia DEBE bloquear la integración.
+10.4. **Accesibilidad**: toda interfaz de usuario DEBE cumplir como mínimo WCAG 2.1 nivel AA,
+verificado mediante pruebas automatizadas y revisión. Además, toda interfaz DEBE ofrecer una
+buena experiencia en distintas resoluciones y tamaños de pantalla (escritorio, tableta y móvil),
+mediante diseño adaptable verificado en dichas resoluciones.
+10.5. **Reutilización de componentes**: DEBEN reutilizarse componentes, librerías y servicios
 corporativos existentes antes de crear nuevos; los componentes compartidos DEBEN ser
 modulares, versionados y documentados.
-8.6. **Sistema de diseño corporativo**: cuando aplique, las interfaces DEBEN utilizar los
+10.6. **Sistema de diseño corporativo**: cuando aplique, las interfaces DEBEN utilizar los
 componentes, tokens y lineamientos del sistema de diseño corporativo; las desviaciones DEBEN
 aprobarse por el responsable de diseño.
-8.7. **Observabilidad**: los componentes DEBEN emitir logs estructurados y métricas que
+10.7. **Observabilidad**: los componentes DEBEN emitir logs estructurados y métricas que
 permitan diagnosticar fallos sin exponer datos sensibles (Principio V).
 
 ## Governance
 
-9.1. **Supremacía**: esta constitución prevalece sobre cualquier otra práctica de desarrollo
+11.1. **Supremacía**: esta constitución prevalece sobre cualquier otra práctica de desarrollo
 del proyecto. Las excepciones DEBEN ser temporales, documentadas, aprobadas y registradas con
 fecha de vencimiento.
-9.2. **Trazabilidad**: DEBE mantenerse trazabilidad bidireccional entre requisitos (BRD,
+11.2. **Trazabilidad**: DEBE mantenerse trazabilidad bidireccional entre requisitos (BRD,
 especificaciones), decisiones de arquitectura (ARD, ADR, planes), implementación (commits,
 pull requests) y pruebas. Todo cambio DEBE referenciar el requisito, historia o tarea que lo
 origina, y todo requisito DEBE estar cubierto por al menos una prueba identificable.
-9.3. **Revisión de código**: todo cambio DEBE integrarse mediante solicitud de cambio revisada
+11.3. **Revisión de código**: todo cambio DEBE integrarse mediante solicitud de cambio revisada
 y aprobada por al menos un revisor distinto del autor; los cambios que afecten seguridad,
 arquitectura o datos sensibles DEBEN contar con la aprobación de un revisor con dicha
 competencia. La revisión DEBE verificar el cumplimiento de esta constitución.
-9.4. **Controles de cumplimiento**: antes de aprobar un cambio DEBEN superarse, como mínimo,
+11.4. **Controles de cumplimiento**: antes de aprobar un cambio DEBEN superarse, como mínimo,
 los siguientes controles automatizados: construcción, pruebas, cobertura, análisis estático,
+tiempos de respuesta de API,
 análisis de secretos, análisis de dependencias y licencias. Un control fallido DEBE bloquear
 la integración.
-9.5. **Verificación en planificación**: todo plan de implementación DEBE incluir una
+11.5. **Verificación en planificación**: todo plan de implementación DEBE incluir una
 verificación explícita de conformidad con cada principio y registrar las desviaciones
 justificadas.
-9.6. **Enmiendas**: las modificaciones a esta constitución DEBEN proponerse por escrito,
+11.6. **Enmiendas**: las modificaciones a esta constitución DEBEN proponerse por escrito,
 incluir justificación e impacto, ser aprobadas por los responsables técnicos designados y
 acompañarse de un plan de adecuación cuando afecten código existente.
-9.7. **Versionado**: esta constitución sigue versionado semántico: MAJOR para eliminación o
+11.7. **Versionado**: esta constitución sigue versionado semántico: MAJOR para eliminación o
 redefinición incompatible de principios; MINOR para principios o secciones nuevas o
 ampliadas materialmente; PATCH para aclaraciones y correcciones de redacción.
-9.8. **Revisión periódica**: el cumplimiento y vigencia de esta constitución DEBEN revisarse
+11.8. **Revisión periódica**: el cumplimiento y vigencia de esta constitución DEBEN revisarse
 al menos una vez al año o ante cambios en las políticas corporativas.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-14
+**Version**: 1.1.0 | **Ratified**: 2026-10-14 | **Last Amended**: 2026-10-19

@@ -1,285 +1,378 @@
----
+# Tareas: Formulario de inicio de sesión (Login billetera)
 
-description: "Task list for 001-login-billetera"
----
+**Rama / Feature**: `001-login-billetera`
+**Entradas**: [spec.md](./spec.md), [plan.md](./plan.md), [data-model.md](./data-model.md), [research.md](./research.md), [contracts/auth-api.md](./contracts/auth-api.md), [contracts/ui-login.md](./contracts/ui-login.md), [quickstart.md](./quickstart.md)
 
-# Tasks: Pantalla de Inicio de Sesión de KynWallet
+**Organización**: las tareas se agrupan por historia de usuario para permitir implementación y prueba independientes.
 
-**Input**: Design documents from `/specs/001-login-billetera/`
+**TDD obligatorio (Constitución, Principio I)**: en cada fase, las tareas de prueba (`[TEST]`) se ejecutan y fallan antes de las tareas de implementación correspondientes.
 
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/ui-login.md,
-contracts/auth-gateway.md, quickstart.md
+## Formato
 
-**Tests**: OBLIGATORIAS. La Constitución (Principio I, TDD) exige escribir las pruebas antes
-del código, y verlas fallar. Cada historia empieza por sus pruebas.
+`- [ ] TNNN [P?] [USn?] Descripción con ruta de archivo`
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+- `[P]`: se puede ejecutar en paralelo (archivos distintos, sin dependencias pendientes).
+- `[USn]`: historia de usuario a la que pertenece la tarea (solo en fases de historia).
+- `[TEST]`: tarea de prueba que debe fallar antes de implementar (TDD).
 
-## Format: `[ID] [P?] [Story] Description`
+## Rutas base
 
-- **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (US1–US5)
-- Rutas relativas a la raíz del repositorio. Las pruebas viven junto al código (`*.test.ts(x)`).
-- Trazabilidad (Constitución 9.2): cada `it(...)` DEBE empezar con el ID del escenario o
-  requisito que verifica, p. ej. `it('US2-1: muestra error genérico…')`.
+- Frontend: `frontend/` (Angular 22 LTS, Node 24 LTS)
+- Backend: `backend/` (NestJS 12, API mock)
+- Raíz: `README.md`, `.nvmrc`, `.env.example`, `.secretlintrc.json`
 
----
+## Bloqueadores pendientes de decisión del usuario
 
-## Phase 1: Setup (Shared Infrastructure)
-
-**Purpose**: Inicializar el proyecto React + TypeScript + Vite y las herramientas de calidad
-
-- [X] T001 Inicializar git en la raíz (`git init`) y crear `.gitignore` con `node_modules/`, `dist/`, `coverage/`, `.env.local`, `.env.*.local`, conservando `.specify/` y `specs/` versionados (Constitución 9.3)
-- [X] T002 Crear `package.json` (`"type": "module"`, `"private": true`, `engines.node >=20`), `index.html` (`lang="es"`, `<title>KynWallet · Iniciar sesión</title>`, `<div id="root">`), `tsconfig.json` (`strict: true`, `noUncheckedIndexedAccess: true`, `jsx: react-jsx`, alias `@/` → `src/`) y `vite.config.ts` con `@vitejs/plugin-react` en la raíz del repositorio (manualmente, sin `npm create vite`, porque el directorio no está vacío)
-- [X] T003 Instalar dependencias según research.md R1/R2/R8: `react@19`, `react-dom@19`, `@fontsource-variable/inter`; dev: `vite@7`, `@vitejs/plugin-react`, `typescript@5`, `@types/react`, `@types/react-dom`, `vitest@3`, `@vitest/coverage-v8`, `jsdom`, `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`, `vitest-axe`, `eslint@9`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-jsx-a11y`, `prettier`, `secretlint`, `@secretlint/secretlint-rule-preset-recommend`, `license-checker-rseidelsohn`; confirmar que no hay vulnerabilidades altas o críticas (`npm audit --audit-level=high`)
-- [X] T004 [P] Configurar ESLint flat config en `eslint.config.js` con `typescript-eslint` (strict), `react-hooks`, `jsx-a11y` (recommended) y reglas `no-restricted-imports` por capa: `src/domain/**` no puede importar `react`, `@/application`, `@/infrastructure` ni `@/ui`; `src/application/**` solo puede importar `@/domain`; `src/ui/**` no puede importar `@/infrastructure` (Constitución 3.2, 3.5); además `no-console: error`
-- [X] T005 [P] Configurar Prettier en `.prettierrc.json` (`singleQuote: true`, `printWidth: 100`) y `.prettierignore` (`dist`, `coverage`, `specs`, `.specify`)
-- [X] T006 [P] Configurar Vitest dentro de `vite.config.ts` (`environment: 'jsdom'`, `globals: true`, `setupFiles: ['src/test/setup.ts']`, `css.modules.classNameStrategy: 'non-scoped'`, cobertura v8 sobre `src/**` excluyendo `src/main.tsx`, `src/test/**` y `**/*.d.ts`, con `thresholds: { lines: 80, branches: 80, functions: 80, statements: 80 }`) y crear `src/test/setup.ts`, que importa `@testing-library/jest-dom/vitest` y extiende `expect` con los matchers de `vitest-axe`
-- [X] T007 [P] Crear `.env.example` con `VITE_DEMO_USERS=[{"email":"demo@example.com","password":"CAMBIAR-EN-.env.local","displayName":"Nombre Ejemplo"}]` y un comentario indicando copiarlo a `.env.local` y usar solo cuentas ficticias; crear `src/vite-env.d.ts` que tipa `ImportMetaEnv.VITE_DEMO_USERS?: string`
-- [X] T008 [P] Crear `.secretlintrc.json` (preset recommend) y `.secretlintignore` (`node_modules`, `dist`, `coverage`)
-- [X] T009 Definir los scripts npm en `package.json`: `dev`, `build` (`tsc --noEmit && vite build`), `preview`, `lint` (`eslint .`), `format` (`prettier --check .`), `typecheck` (`tsc --noEmit`), `test` (`vitest run`), `test:watch`, `test:coverage` (`vitest run --coverage`), `audit:deps` (`npm audit --audit-level=high`), `audit:licenses` (`license-checker-rseidelsohn --production --onlyAllow "MIT;ISC;BSD-2-Clause;BSD-3-Clause;Apache-2.0;0BSD;OFL-1.1;CC0-1.0;BlueOak-1.0.0"`), `scan:secrets` (`secretlint "**/*"`) y `verify`, que ejecuta en secuencia lint, format, typecheck, test:coverage, build, audit:deps, audit:licenses y scan:secrets (research.md R9)
-
-**Checkpoint**: `npm run lint`, `npm run typecheck` y `npm test` (sin pruebas, `--passWithNoTests`) terminan sin errores
+- **B1 (Node 24 vs 26)**: la plan usa Node 24 LTS. Las tareas T001 y T002 asumen 24. Si se elige 26, actualizar `.nvmrc` y `engines`.
+- **B2 (desviación de color)**: los tokens `--brand-700`, `--neutral-600` y `--neutral-border` son derivaciones de accesibilidad. T018 queda marcada como pendiente de aprobación. Se puede implementar con los colores del diseño, pero el criterio WCAG AA no se cumpliría.
+- **B3 (cuentas demo)**: la plan propone `DEMO_ACCOUNTS` por variable de entorno con hashes scrypt, no en código. T013 y T014 siguen esa decisión. Requiere aprobación.
+- **B4 (código legado `src/`)**: el código React de `src/` no se elimina en este listado. La tarea T119 solo aplica si el usuario lo aprueba.
 
 ---
 
-## Phase 2: Foundational (Blocking Prerequisites)
+## Fase 1: Setup (infraestructura compartida)
 
-**Purpose**: Tokens, tipos de dominio, puerto y componentes base que todas las historias usan
+**Objetivo**: crear la estructura del monorepo, herramientas de calidad y scripts de verificación.
 
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
-
-- [X] T010 [P] Crear `src/ui/styles/tokens.css` con las variables de Figma en `:root`: `--neutral-0: #ffffff`, `--neutral-300: #d7d9e6`, `--neutral-400: #a9abc2`, `--neutral-500: #8a8ca8`, `--neutral-700: #3d3f5c`, `--neutral-900: #16182c`, `--brand-500: #ff6b3d`, `--brand-600: #ef5226`; los tokens accesibles de research.md R3: `--brand-700: #d04721`, `--neutral-600: #73748b`, `--neutral-border: #92949c`; el degradado `--brand-gradient: linear-gradient(121.19deg, #ff8a65 0%, #ef5226 70.71%)`; radios `--radius-control: 12px`, `--radius-card: 22px`, `--radius-checkbox: 6px`; alturas `--control-height: 52px`, `--social-height: 48px`; `--focus-ring: 0 0 0 2px var(--neutral-0), 0 0 0 4px var(--neutral-900)`; y colores de error `--danger-600: #c62828` (contraste ≥ 4.5:1 sobre blanco)
-- [X] T011 [P] Crear `src/ui/styles/global.css`: importar `@fontsource-variable/inter`, `font-family: 'Inter Variable', system-ui, sans-serif`, `box-sizing: border-box` global, `margin: 0` en `body`, `min-height: 100dvh`, fondo `var(--neutral-0)`, estilo `:focus-visible { outline: none; box-shadow: var(--focus-ring); }` y la clase utilitaria `.visually-hidden`
-- [X] T012 [P] Descargar a `src/ui/assets/` con `curl -L` los SVG del diseño obtenidos con el MCP de Figma `get_design_context` sobre el nodo `2:2` del archivo `f7uDsv8sh6ZOtK2OitTqtg`: logo (`logo-mark.svg`, 20×44), icono de visibilidad (`eye.svg`, 20×12) e icono social (`social-placeholder.svg`, 20×20). Las URL temporales caducan a los 7 días: volver a ejecutar `get_design_context` si fallan. No sustituir los marcadores de posición por logotipos de marca (research.md R11)
-- [X] T013 [P] Crear los tipos de dominio en `src/domain/auth.ts` según contracts/auth-gateway.md: `LoginCredentials = { email: string; password: string }`, `AuthResult` (unión `success` con `displayName`, `invalid-credentials`, `unavailable`) y `DemoAccount = { email: string; password: string; displayName: string }`
-- [X] T014 [P] Crear `src/domain/messages.ts` como fuente única de textos (Principio IV): `EMAIL_REQUIRED: 'Ingresa tu correo electrónico'`, `EMAIL_INVALID: 'Ingresa un correo electrónico válido'`, `PASSWORD_REQUIRED: 'Ingresa tu contraseña'`, `PASSWORD_TOO_SHORT: 'La contraseña debe tener al menos 8 caracteres'`, `PASSWORD_TOO_LONG: 'La contraseña no puede superar 128 caracteres'`, `INVALID_CREDENTIALS: 'Correo o contraseña incorrectos'`, `UNAVAILABLE: 'Servicio de acceso no disponible. Intenta más tarde.'`, `FEATURE_UNAVAILABLE: 'Función no disponible en esta demostración'`
-- [X] T015 [P] Crear el puerto `src/application/ports/AuthGateway.ts` con `authenticate(credentials: LoginCredentials): Promise<AuthResult>` (contracts/auth-gateway.md)
-- [X] T016 [P] Escribir las pruebas (que deben fallar) de `Button` en `src/ui/components/Button/Button.test.tsx`: renderiza su texto como `button`; variante `primary` y `secondary`; con `loading` tiene `aria-busy="true"`, está deshabilitado y muestra `loadingLabel`; `type` por defecto `button`; sin violaciones de `axe`
-- [X] T017 [P] Escribir las pruebas (que deben fallar) de `TextField` en `src/ui/components/TextField/TextField.test.tsx`: la etiqueta se asocia al input (`getByLabelText`); propaga `type`, `autoComplete`, `placeholder`, `value`, `onChange`, `onBlur`; acepta un `ref` (forwardRef) y un slot `endAdornment`; sin violaciones de `axe`
-- [X] T018 Implementar `src/ui/components/Button/Button.tsx` y `Button.module.css` hasta pasar T016: `primary` con fondo `var(--brand-700)`, texto blanco 16px SemiBold, alto 52px, radio 12px, ancho 100 %; `secondary` con fondo blanco, borde 1.5px `var(--neutral-border)`, texto `var(--neutral-900)` 15px SemiBold, alto 48px; estados hover, disabled y `:focus-visible`
-- [X] T019 Implementar `src/ui/components/TextField/TextField.tsx` y `TextField.module.css` hasta pasar T017: etiqueta 14px Medium `var(--neutral-700)`, gap 8px; contenedor de 52px de alto, borde 1.5px `var(--neutral-border)`, radio 12px, padding horizontal 16px; texto 15px; placeholder `var(--neutral-600)`
-- [X] T020 [P] Crear `src/ui/layout/BrandPanel/BrandPanel.tsx` y `BrandPanel.module.css` según Figma (nodo `2:3`): fondo `var(--brand-gradient)`, padding 64px 56px, columna con `justify-content: space-between`; logo (`logo-mark.svg` + "KynWallet" 26px Bold, gap 12px); titular "Tu dinero, sin fronteras." 44px Bold con line-height 1.08 y salto tras la coma; texto "Envía, recibe y paga en segundos. Una billetera pensada para tu día a día." 17px con line-height 1.5, color `rgba(255,255,255,.85)`, gap 18px; tarjeta decorativa `aria-hidden="true"` de 360×210, fondo `rgba(255,255,255,.16)`, borde `rgba(255,255,255,.35)`, radio 22px, padding 24px 26px, con "Kyn Card" 15px SemiBold, chip 38×28 `rgba(255,217,128,.9)` radio 6px, "5294  ••••  ••••  4827" 20px Medium tracking 1px, y "STEVEN LUNA"/"12/29" 13px Medium. Por debajo de 960px solo se muestra el logo (research.md R10)
-- [X] T021 Crear `src/ui/features/login/LoginScreen.tsx` y `LoginScreen.module.css`: `<main>` en dos columnas desde 960px (`BrandPanel` de 620px desde 1280px, 43 % entre 960 y 1280px; panel de formulario blanco con contenido centrado de máx. 400px de ancho); por debajo de 960px, una columna con el `BrandPanel` reducido arriba; padding lateral de 16px por debajo de 480px; sin scroll horizontal desde 320px (FR-018). Recibe por props el contenido del panel derecho
-- [X] T022 Crear `src/App.tsx` y `src/main.tsx` provisionales: `main.tsx` importa `global.css` y `tokens.css` y renderiza `<App />` en `StrictMode`; `App` muestra `LoginScreen` con un contenido provisional
-
-**Checkpoint**: `npm run dev` muestra el panel de marca y el layout responsivo; las pruebas de Button y TextField pasan
-
----
-
-## Phase 3: User Story 1 - Iniciar sesión con credenciales válidas (Priority: P1) 🎯 MVP
-
-**Goal**: con una cuenta de demostración válida, el usuario ve la vista "¡Bienvenido, {nombre}!" y puede cerrar sesión
-
-**Independent Test**: definir una cuenta en `.env.local`, ingresar sus credenciales, ver el estado de carga y luego la bienvenida; "Cerrar sesión" vuelve al formulario vacío (quickstart escenarios 1–3)
-
-### Tests for User Story 1 ⚠️
-
-> Escribir primero; confirmar que FALLAN antes de implementar
-
-- [X] T023 [P] [US1] Pruebas de `normalizeEmail` en `src/domain/validation.test.ts`: recorta espacios periféricos y convierte a minúsculas (`'  Demo@Example.COM '` → `'demo@example.com'`); no altera el interior
-- [X] T024 [P] [US1] Pruebas de contrato de `InMemoryAuthGateway` en `src/infrastructure/InMemoryAuthGateway.test.ts` (contracts/auth-gateway.md): C1 correo en mayúsculas y con espacios + contraseña exacta → `{ kind: 'success', displayName }`; C4 `accounts === null` → `unavailable`; C5 una excepción interna → `unavailable` sin rechazar la promesa; C6 el resultado nunca contiene la contraseña; espera configurable: con `delayMs: 1000` y `vi.useFakeTimers()` no resuelve antes de 1000 ms
-- [X] T025 [P] [US1] Pruebas de `loadDemoAccounts` en `src/infrastructure/loadDemoAccounts.test.ts`: JSON válido → cuentas con el correo normalizado; devuelve `null` si `raw` es `undefined` o vacío, si el JSON es inválido, si no es un arreglo, si el arreglo está vacío, si una cuenta incumple las reglas de data-model.md ("email: obligatorio, formato válido"; "password: obligatorio, 8–128 caracteres"; "displayName: obligatorio, 1–80 caracteres") o si hay correos duplicados ("los correos repetidos invalidan la configuración")
-- [X] T026 [P] [US1] Pruebas del caso de uso en `src/application/authenticate.test.ts`: delega en un `AuthGateway` falso las credenciales con el correo normalizado y la contraseña sin modificar, y devuelve su resultado; si el gateway lanza una excepción, devuelve `unavailable`
-- [X] T027 [P] [US1] Pruebas del reducer en `src/ui/features/login/loginReducer.test.ts` (data-model.md LoginFormState): estado inicial `editing` con valores vacíos; `submit` → `submitting`; un segundo `submit` en `submitting` se ignora (FR-008); `success` → `welcome` con `welcomeName`; `logout` → estado inicial
-- [X] T028 [P] [US1] Pruebas de `WelcomeView` en `src/ui/features/login/WelcomeView.test.tsx`: `heading` nivel 1 "¡Bienvenido, Steven Luna!" con el foco al montar (FR-009); el `button` "Cerrar sesión" llama a `onLogout`; sin violaciones de `axe`
-- [X] T029 [US1] Pruebas de integración en `src/ui/features/login/LoginForm.test.tsx` con un gateway falso inyectado y `user-event`: US1-1 credenciales válidas → bienvenida con el nombre; US1-2 durante la espera el botón tiene `aria-busy`, está deshabilitado y un segundo clic no invoca de nuevo el gateway; US1-3 un correo con mayúsculas y espacios autentica; US1-4 Enter en la contraseña envía; US1-5 "Cerrar sesión" vuelve con los campos vacíos
-
-### Implementation for User Story 1
-
-- [X] T030 [P] [US1] Implementar `normalizeEmail` en `src/domain/validation.ts` hasta pasar T023
-- [X] T031 [P] [US1] Implementar `src/infrastructure/InMemoryAuthGateway.ts` hasta pasar T024: constructor `(accounts: DemoAccount[] | null, options?: { delayMs?: number })` con `delayMs` por defecto 1000; compara el correo normalizado y la contraseña exacta; captura cualquier excepción y devuelve `unavailable`; sin `console` ni registro de la contraseña (FR-012)
-- [X] T032 [P] [US1] Implementar `src/infrastructure/loadDemoAccounts.ts` hasta pasar T025, sin registrar ni exponer los valores leídos
-- [X] T033 [US1] Implementar `src/application/authenticate.ts` hasta pasar T026: `createAuthenticate(gateway: AuthGateway) => (c: LoginCredentials) => Promise<AuthResult>`
-- [X] T034 [US1] Implementar `src/ui/features/login/loginReducer.ts` hasta pasar T027, con el tipo de estado y las acciones de data-model.md (`status`, `values`, `touched`, `fieldErrors`, `authError`, `welcomeName`, `rememberMe`, `passwordVisible`, `notice`)
-- [X] T035 [US1] Implementar el hook `src/ui/features/login/useLoginForm.ts`: envuelve `useReducer`; `submit` despacha `submit`, llama al caso de uso inyectado y despacha el resultado; ignora resultados si el componente se desmonta
-- [X] T036 [US1] Implementar `src/ui/features/login/WelcomeView.tsx` y `WelcomeView.module.css` hasta pasar T028 (título 30px Bold `var(--neutral-900)`, `tabIndex={-1}`, foco con `useEffect`; botón primary "Cerrar sesión")
-- [X] T037 [US1] Implementar `src/ui/features/login/LoginForm.tsx` y `LoginForm.module.css` hasta pasar T029: `<form noValidate>` con gap 22px; encabezado `h1` "Bienvenido de nuevo" (30px Bold `var(--neutral-900)`) y subtítulo "Ingresa a tu cuenta para continuar" (16px `var(--neutral-600)`), gap 8px; `TextField` "Correo electrónico" (`type="email"`, `autoComplete="username"`, placeholder "tucorreo@ejemplo.com"); `TextField` "Contraseña" (`type="password"`, `autoComplete="current-password"`); `Button` primary `type="submit"` "Iniciar sesión" con `loadingLabel` "Iniciando sesión…". Si `status === 'welcome'`, renderiza `WelcomeView`
-- [X] T038 [US1] Conectar la raíz de composición en `src/main.tsx` y `src/App.tsx`: `loadDemoAccounts(import.meta.env.VITE_DEMO_USERS)` → `new InMemoryAuthGateway(accounts)` → `createAuthenticate(gateway)`, pasado por props a `LoginForm` dentro de `LoginScreen` (Constitución 2.5); `App` recibe el caso de uso por props para poder probarlo
-
-**Checkpoint**: la historia US1 funciona de punta a punta con `npm run dev` y sus pruebas pasan
+- [ ] T001 Crear `.nvmrc` en la raíz con el valor `24` (Node.js 24 LTS)
+- [X] T002 Actualizar `engines` a `"node": ">=24"` en `package.json` (raíz) sin alterar scripts existentes de la app legada
+- [ ] T003 Generar el proyecto Angular 22 con `npx @angular/cli@22 new kynwallet-frontend --directory frontend --style css --routing false --ssr false` en `frontend/`
+- [ ] T004 Generar el proyecto NestJS 12 con `npx @nestjs/cli@12 new kynwallet-backend --directory backend --package-manager npm --skip-git` en `backend/`
+- [ ] T005 [P] Configurar `frontend/tsconfig.json` con `strict: true`, `noImplicitReturns` y `noPropertyAccessFromIndexSignature`
+- [ ] T006 [P] Configurar `backend/tsconfig.json` con `strict: true` y módulos ESM (research R1)
+- [ ] T007 [P] Añadir ESLint de reglas de capas en `frontend/eslint.config.mjs` (prohibir importar `presentation` desde `domain`, `infrastructure` desde `domain`)
+- [ ] T008 [P] Añadir ESLint de reglas de capas en `backend/eslint.config.mjs` (prohibir importar `infrastructure` desde `domain` y `application`)
+- [ ] T009 [P] Configurar Prettier en `frontend/.prettierrc` y `backend/.prettierrc` con la misma configuración
+- [ ] T010 [P] Instalar `@vitest/coverage-v8` y configurar umbral de cobertura 80 % (líneas, funciones, ramas, sentencias) en `frontend/vitest.config.ts`
+- [X] T011 [P] Configurar umbral de cobertura 80 % en el backend. Hecho en `backend/vitest.config.ts` (`coverage.thresholds`), no en `jest.config.ts`, porque el runner es Vitest (desviación D2 en `plan.md`)
+- [ ] T012 [P] Crear `frontend/proxy.conf.json` para redirigir `/api` a `http://localhost:3000` y registrarlo en `frontend/angular.json`
+- [X] T013 [P] Crear `backend/.env.example` con valores ficticios para `PORT`, `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`, `JWT_EXPIRES_IN_SECONDS`, `SIMULATED_LATENCY_MS`, `DEMO_ACCOUNTS` (sin secretos reales). Ver data-model.md, sección "Configuración"
+- [ ] T014 Actualizar `.gitignore` en la raíz para ignorar `.env`, `frontend/dist/`, `backend/dist/`, `coverage/` y `node_modules/` de ambos proyectos
+- [X] T015 Instalar `secretlint` y `@secretlint/secretlint-rule-preset-recommend` en la raíz, con configuración en `.secretlintrc.json` (research R8)
+- [ ] T016 Añadir scripts `audit:deps` (`npm audit --audit-level=high`), `audit:licenses` (`license-checker-rseidelsohn` con lista blanca) y `scan:secrets` en la raíz y en cada proyecto. Parcial: en la raíz hay `audit:deps` y `scan:secrets`; falta `audit:licenses` y los scripts por proyecto
+- [ ] T017 Añadir script `verify` en `frontend/package.json` y `backend/package.json` que ejecute lint, formato, tests con cobertura, `audit:deps` y `audit:licenses`
 
 ---
 
-## Phase 4: User Story 2 - Retroalimentación ante credenciales incorrectas (Priority: P1)
+## Fase 2: Foundational (prerrequisitos bloqueantes)
 
-**Goal**: ante credenciales incorrectas se muestra un único mensaje genérico, se conserva el correo y se facilita el reintento
+**Objetivo**: base de dominio, seguridad y composición que todas las historias necesitan. Ninguna historia puede empezar antes de completar esta fase.
 
-**Independent Test**: enviar un correo válido con una contraseña incorrecta y luego un correo inexistente; ambos muestran "Correo o contraseña incorrectos" (quickstart escenarios 4, 5 y 11)
+### Backend: pruebas primero (TDD)
 
-### Tests for User Story 2 ⚠️
+- [ ] T018 [TEST] Escribir prueba unitaria de validación de configuración de entorno en `backend/test/unit/config/env.spec.ts`: rechaza `JWT_SECRET` menor de 32 caracteres, `SIMULATED_LATENCY_MS` fuera de 0–4000, `JWT_EXPIRES_IN_SECONDS` mayor de 900, y `PORT` por defecto 3000
+- [ ] T019 [P] [TEST] Escribir prueba unitaria de reglas de credenciales en `backend/test/unit/domain/credentials.spec.ts`: email `^[^\s@]+@[^\s@]+\.[^\s@]{2,}$` con máximo 254 caracteres y contraseña entre 15 y 128 caracteres (data-model.md, LoginRequest)
+- [ ] T020 [P] [TEST] Escribir prueba unitaria de hash scrypt en `backend/test/unit/infrastructure/password-hash.spec.ts`: verificación con `timingSafeEqual`, formato `scrypt$N$r$p$salt$hash` y rechazo de hashes mal formados
+- [ ] T021 [P] [TEST] Escribir prueba de arquitectura de capas en `backend/test/unit/architecture.spec.ts` que falle si `domain` importa de `application`, `infrastructure` o `interfaces`
+- [ ] T022 [P] [TEST] Escribir prueba unitaria de `EnvPartyDirectory` en `backend/test/unit/infrastructure/env-party-directory.spec.ts`: falla al arrancar con emails duplicados o hashes inválidos en `DEMO_ACCOUNTS`
 
-- [X] T039 [P] [US2] Ampliar `src/infrastructure/InMemoryAuthGateway.test.ts` con C2 (contraseña incorrecta, incluyendo diferencias de mayúsculas o espacios → `invalid-credentials`) y C3 (correo inexistente → resultado idéntico a C2)
-- [X] T040 [P] [US2] Ampliar `src/ui/features/login/loginReducer.test.ts`: `invalid-credentials` → `authError` con el correo conservado y la contraseña vacía; `unavailable` → `authError: 'unavailable'`; editar cualquier campo en `authError` → `editing` con `authError: null`
-- [X] T041 [P] [US2] Pruebas de `Alert` en `src/ui/components/Alert/Alert.test.tsx`: con `tone="error"` usa `role="alert"`; con `tone="info"` usa `role="status"`; sin violaciones de `axe`
-- [X] T042 [US2] Ampliar `src/ui/features/login/LoginForm.test.tsx`: US2-1 la contraseña incorrecta muestra `alert` "Correo o contraseña incorrectos" sin bienvenida; US2-2 un correo inexistente muestra exactamente el mismo texto; US2-3 editar un campo oculta el error; US2-4 el correo se conserva, la contraseña queda vacía y con el foco; caso límite: un gateway que devuelve `unavailable` muestra "Servicio de acceso no disponible. Intenta más tarde."
+### Backend: implementación base
 
-### Implementation for User Story 2
+- [ ] T023 Implementar carga y validación de configuración con `@nestjs/config` y esquema en `backend/src/config/env.validation.ts`
+- [ ] T024 [P] Implementar entidad `Party` y tipo `DemoAccount` en `backend/src/domain/party/party.ts` (data-model.md)
+- [ ] T025 [P] Implementar reglas de credenciales y normalización de email (trim y minúsculas) en `backend/src/domain/credentials/credentials.ts`
+- [ ] T026 [P] Implementar `AuthOutcome` como tipo de resultado (éxito, credenciales inválidas, no disponible) en `backend/src/domain/auth/auth-outcome.ts`
+- [ ] T027 Definir el puerto `PartyDirectory` en `backend/src/application/ports/party-directory.port.ts`
+- [ ] T028 Definir el puerto `PasswordVerifier` en `backend/src/application/ports/password-verifier.port.ts`
+- [ ] T029 Definir el puerto `TokenIssuer` en `backend/src/application/ports/token-issuer.port.ts`
+- [ ] T030 Implementar `password-hash.ts` con `crypto.scrypt` y `timingSafeEqual` en `backend/src/infrastructure/security/password-hash.ts`
+- [ ] T031 Implementar `EnvPartyDirectory` que lea `DEMO_ACCOUNTS`, valide duplicados y formato de hash al arrancar en `backend/src/infrastructure/persistence/env-party-directory.ts`
+- [ ] T032 Implementar `JwtTokenIssuer` con HS256, `iss=kynwallet-backend`, `aud=kynwallet-web`, `exp=900s` y `sub` opaco en `backend/src/infrastructure/security/jwt-token-issuer.ts`
+- [ ] T033 Implementar latencia simulada acotada a 0–4000 ms (defecto 1000) en `backend/src/infrastructure/simulation/simulated-latency.ts`
+- [ ] T034 Implementar guard global de JWT y decorador `@Public()` en `backend/src/interfaces/http/security/jwt-auth.guard.ts` (solo `POST /sessions` es público)
+- [ ] T035 Configurar `ValidationPipe` global con `whitelist: true` y `forbidNonWhitelisted: true` en `backend/src/main.ts`
+- [ ] T036 Configurar `helmet` y límite de 5 solicitudes por minuto por IP con `@nestjs/throttler` en `backend/src/app.module.ts`
+- [ ] T037 Implementar filtro de excepciones RFC 9457 (`application/problem+json`) en `backend/src/interfaces/http/filters/problem-details.filter.ts`
+- [ ] T038 Crear script `hash-password` en `backend/scripts/hash-password.ts` para generar hashes scrypt de cuentas demo (sin persistir contraseñas)
 
-- [X] T043 [P] [US2] Ajustar `src/infrastructure/InMemoryAuthGateway.ts` si hace falta para pasar T039 (sin ramas que distingan correo inexistente de contraseña incorrecta)
-- [X] T044 [P] [US2] Implementar `src/ui/components/Alert/Alert.tsx` y `Alert.module.css` hasta pasar T041: `error` con texto `var(--danger-600)` y fondo tenue; `info` con texto `var(--neutral-900)`; 14px; radio 12px
-- [X] T045 [US2] Ampliar `src/ui/features/login/loginReducer.ts` hasta pasar T040
-- [X] T046 [US2] Ampliar `src/ui/features/login/LoginForm.tsx` hasta pasar T042: renderiza `Alert` de error con `INVALID_CREDENTIALS` o `UNAVAILABLE` de `src/domain/messages.ts` encima del botón; tras `invalid-credentials`, mueve el foco a la contraseña con un `ref`
+### Frontend: pruebas primero (TDD)
 
-**Checkpoint**: US1 y US2 funcionan y se prueban de forma independiente
+- [ ] T039 [TEST] Escribir prueba unitaria de validación de formulario en `frontend/src/app/domain/login/login-validation.spec.ts`: email obligatorio y válido, contraseña obligatoria y entre 15 y 128 caracteres
+- [ ] T040 [P] [TEST] Escribir prueba unitaria de mensajes de error en `frontend/src/app/domain/login/messages.spec.ts` con textos exactos de contract ui-login.md
+- [ ] T041 [P] [TEST] Escribir prueba unitaria de `AuthTokenStore` en `frontend/src/app/infrastructure/auth/auth-token-store.spec.ts`: token solo en memoria, sin `localStorage` ni `sessionStorage`
+- [ ] T042 [P] [TEST] Escribir prueba unitaria del interceptor JWT en `frontend/src/app/infrastructure/http/auth.interceptor.spec.ts`: agrega `Authorization: Bearer` solo a `/api/v1/party-authentication/sessions/current`
 
----
+### Frontend: implementación base
 
-## Phase 5: User Story 3 - Validar los campos antes de enviar (Priority: P2)
+- [ ] T043 Implementar reglas de validación y regex en `frontend/src/app/domain/login/login-validation.ts`
+- [ ] T044 [P] Implementar catálogo de mensajes en `frontend/src/app/domain/login/messages.ts`
+- [ ] T045 Definir puerto `AuthGateway` y tipos `LoginCredentials` y `AuthResult` en `frontend/src/app/application/ports/auth-gateway.ts` (data-model.md)
+- [ ] T046 Implementar `AuthTokenStore` basado en señales en `frontend/src/app/infrastructure/auth/auth-token-store.ts`
+- [ ] T047 Implementar interceptor JWT en `frontend/src/app/infrastructure/http/auth.interceptor.ts`
+- [ ] T048 [P] Implementar tokens de diseño CSS en `frontend/src/styles/tokens.css` con valores Figma (`--brand-500 #ff6b3d`, `--brand-600 #ef5226`) y derivaciones de accesibilidad (`--brand-700 #d04721`, `--neutral-600 #73748b`, `--neutral-border #92949c`). Marcar derivaciones como pendientes de aprobación (B2)
+- [ ] T049 [P] Configurar tipografía Inter con `@fontsource-variable/inter` en `frontend/src/styles/global.css`
+- [ ] T050 Implementar composición raíz con `API_BASE_URL` e interceptor en `frontend/src/app/app.config.ts` y `frontend/src/main.ts`
+- [ ] T051 Implementar layout compartido con puntos de quiebre de R10 (320–767, 768–1023, ≥1024; panel de marca oculto por debajo de 960 px) en `frontend/src/app/presentation/layout/auth-layout.component.ts`
 
-**Goal**: el formulario indica qué falta o está mal antes de intentar autenticar
-
-**Independent Test**: enviar vacío, con "usuario@" y con una contraseña de 7 caracteres; se ven los mensajes por campo y no se invoca el gateway (quickstart escenarios 6–8)
-
-### Tests for User Story 3 ⚠️
-
-- [X] T047 [P] [US3] Ampliar `src/domain/validation.test.ts` con `validateCredentials` según data-model.md: correo vacío tras trim → "Ingresa tu correo electrónico"; correos que no cumplen `^[^\s@]+@[^\s@]+\.[^\s@]{2,}$` (`'usuario@'`, `'usuario.com'`, `'a@b.c'`) → "Ingresa un correo electrónico válido"; correo de "> 254 caracteres" → "Ingresa un correo electrónico válido"; contraseña vacía → "Ingresa tu contraseña"; "< 8 caracteres" → "La contraseña debe tener al menos 8 caracteres"; "> 128 caracteres" → "La contraseña no puede superar 128 caracteres"; la contraseña con espacios no se recorta; credenciales válidas → `{}`
-- [X] T048 [P] [US3] Ampliar `src/ui/features/login/loginReducer.test.ts`: `blur` marca el campo como tocado y calcula su error; `submit` con errores marca ambos como tocados, queda en `editing` y no pasa a `submitting` (FR-006); `change` en un campo con error recalcula y oculta el error si es válido (FR-005)
-- [X] T049 [P] [US3] Ampliar `src/ui/components/TextField/TextField.test.tsx`: con `error` el input tiene `aria-invalid="true"` y `aria-describedby` apunta al texto del error, que se muestra bajo el campo
-- [X] T050 [US3] Ampliar `src/ui/features/login/LoginForm.test.tsx`: US3-1 envío vacío → ambos mensajes, gateway no invocado y foco en el correo; US3-2 "usuario@" + blur → mensaje de correo válido; US3-3 contraseña de 7 caracteres → mensaje de longitud y gateway no invocado; US3-4 corregir oculta el mensaje; US3-5 el nombre accesible o la descripción del campo incluye el error; caso límite: el texto pegado se valida igual que el escrito
-
-### Implementation for User Story 3
-
-- [X] T051 [US3] Implementar `validateCredentials` en `src/domain/validation.ts` hasta pasar T047, usando los textos de `src/domain/messages.ts`
-- [X] T052 [P] [US3] Ampliar `src/ui/components/TextField/TextField.tsx` y su CSS hasta pasar T049: prop `error?: string`, id del error con `useId`, borde y texto de error en `var(--danger-600)` 13px
-- [X] T053 [US3] Ampliar `src/ui/features/login/loginReducer.ts` hasta pasar T048, usando `validateCredentials`
-- [X] T054 [US3] Ampliar `src/ui/features/login/LoginForm.tsx` hasta pasar T050: `onBlur` en los campos, `error` a cada `TextField`, foco en el primer campo con error al enviar
-
-**Checkpoint**: US1, US2 y US3 funcionan de forma independiente
-
----
-
-## Phase 6: User Story 4 - Mostrar u ocultar la contraseña (Priority: P3)
-
-**Goal**: el usuario puede ver temporalmente la contraseña
-
-**Independent Test**: escribir una contraseña y alternar el control de visibilidad con ratón y teclado (quickstart escenario 9)
-
-### Tests for User Story 4 ⚠️
-
-- [X] T055 [P] [US4] Pruebas de `PasswordField` en `src/ui/components/PasswordField/PasswordField.test.tsx`: US4-1 por defecto `type="password"` y el botón "Mostrar contraseña" con `aria-pressed="false"`; al activarlo, `type="text"` y "Ocultar contraseña" con `aria-pressed="true"`; US4-2 se vuelve a ocultar; US4-3 alcanzable con Tab y activable con Enter/Espacio; propaga `error`, `ref` y `autoComplete`; sin violaciones de `axe`
-
-### Implementation for User Story 4
-
-- [X] T056 [US4] Implementar `src/ui/components/PasswordField/PasswordField.tsx` y su CSS hasta pasar T055, componiendo `TextField` con `endAdornment` = `<button type="button">` que contiene `eye.svg` (20×12, `alt=""`) y su nombre accesible
-- [X] T057 [US4] Reemplazar en `src/ui/features/login/LoginForm.tsx` el `TextField` de contraseña por `PasswordField` y verificar que las pruebas de US1–US3 siguen pasando
-
-**Checkpoint**: US4 funciona sin romper las historias anteriores
+**Punto de control**: base de dominio, seguridad y layout lista. Las historias pueden empezar.
 
 ---
 
-## Phase 7: User Story 5 - Elementos del diseño fuera de alcance (Priority: P3)
+## Fase 3: Historia de usuario 1 - Inicio de sesión exitoso (Prioridad: P1) 🎯 MVP
 
-**Goal**: fidelidad completa al diseño; los elementos sin funcionalidad avisan que no están disponibles
+**Objetivo**: un usuario con credenciales válidas inicia sesión, ve la vista de bienvenida y puede cerrar sesión.
 
-**Independent Test**: activar "¿Olvidaste tu contraseña?", Google, Apple y "Regístrate" y ver el aviso; marcar "Recordarme" sin efectos (quickstart escenario 10)
+**Prueba independiente**: con `demo@kynwallet.test` y una contraseña válida de 15 o más caracteres, el formulario muestra "Cargando..." durante la latencia simulada, luego la bienvenida con el nombre y el botón "Cerrar sesión". Pulsar Enter envía el formulario. Cerrar sesión borra el token y vuelve al formulario.
 
-### Tests for User Story 5 ⚠️
+### Pruebas US1 (TDD)
 
-- [X] T058 [P] [US5] Pruebas de `Checkbox` en `src/ui/components/Checkbox/Checkbox.test.tsx`: `checkbox` con la etiqueta "Recordarme", alterna `checked`; sin violaciones de `axe`
-- [X] T059 [P] [US5] Pruebas de `SocialButton` en `src/ui/components/SocialButton/SocialButton.test.tsx`: `button` con el nombre del proveedor e icono decorativo (`alt=""`); llama a `onClick`
-- [X] T060 [P] [US5] Pruebas de `Divider` en `src/ui/components/Divider/Divider.test.tsx`: muestra "o continúa con"; las líneas son decorativas
-- [X] T061 [US5] Ampliar `src/ui/features/login/LoginForm.test.tsx`: US5-1 cada uno de "¿Olvidaste tu contraseña?", "Google", "Apple" y "Regístrate" muestra `status` "Función no disponible en esta demostración" y conserva los valores ingresados; US5-2 "Recordarme" cambia de estado sin escribir en `localStorage` ni `sessionStorage` (espiar `Storage.prototype.setItem`); orden de tabulación según contracts/ui-login.md
+- [ ] T052 [P] [US1] [TEST] Escribir prueba unitaria del caso de uso `AuthenticateParty` en `backend/test/unit/application/authenticate-party.spec.ts`: éxito con credenciales válidas y normalización de email
+- [ ] T053 [P] [US1] [TEST] Escribir prueba de contrato de `POST /api/v1/party-authentication/sessions` en `backend/test/integration/sessions.initiate.spec.ts` con respuesta 201 y `accessToken` (contracts/auth-api.md)
+- [ ] T054 [P] [US1] [TEST] Escribir prueba de contrato de `GET /api/v1/party-authentication/sessions/current` en `backend/test/integration/sessions.retrieve.spec.ts`: 200 con JWT válido, 401 sin token y 401 con token expirado
+- [ ] T055 [P] [US1] [TEST] Escribir prueba de componente del formulario en `frontend/src/app/presentation/login/login-form.component.spec.ts`: envío válido llama a `AuthGateway` y muestra estado de carga
+- [ ] T056 [P] [US1] [TEST] Escribir prueba de componente: Enter envía el formulario y el botón está deshabilitado mientras carga (contracts/ui-login.md, #teclado)
+- [ ] T057 [P] [US1] [TEST] Escribir prueba de componente de la vista de bienvenida en `frontend/src/app/presentation/welcome/welcome.component.spec.ts`: muestra nombre, mueve foco al encabezado y "Cerrar sesión" limpia estado
+- [ ] T058 [P] [US1] [TEST] Escribir prueba unitaria de normalización de email (trim y minúsculas) en `frontend/src/app/domain/login/login-validation.spec.ts`
 
-### Implementation for User Story 5
+### Implementación US1 - Backend
 
-- [X] T062 [P] [US5] Implementar `src/ui/components/Checkbox/Checkbox.tsx` y su CSS hasta pasar T058: input nativo con apariencia de casilla de 20×20, borde 1.5px `var(--neutral-border)`, radio 6px; marcado con fondo `var(--brand-700)`; etiqueta 14px Medium `var(--neutral-700)`, gap 8px
-- [X] T063 [P] [US5] Implementar `src/ui/components/SocialButton/SocialButton.tsx` hasta pasar T059, reutilizando `Button` variante `secondary` con `social-placeholder.svg` (20×20) y gap 8px
-- [X] T064 [P] [US5] Implementar `src/ui/components/Divider/Divider.tsx` y su CSS hasta pasar T060: dos líneas de 1px `var(--neutral-300)` con flex 1, gap 14px, texto 13px `var(--neutral-600)`
-- [X] T065 [US5] Ampliar `src/ui/features/login/LoginForm.tsx` y `loginReducer.ts` hasta pasar T061, siguiendo el orden de Figma: fila de opciones (Checkbox "Recordarme" + botón-enlace "¿Olvidaste tu contraseña?" 14px SemiBold `var(--brand-700)`, `justify-content: space-between`) entre la contraseña y "Iniciar sesión"; luego `Divider`; fila social (Google, Apple; gap 12px; mitades iguales); pie centrado "¿No tienes cuenta?" (14px `var(--neutral-600)`) + botón-enlace "Regístrate" (14px SemiBold `var(--brand-700)`), gap 5px; `Alert` `info` con `FEATURE_UNAVAILABLE`
+- [ ] T059 [US1] Implementar caso de uso `AuthenticateParty` en `backend/src/application/authenticate-party.use-case.ts`
+- [ ] T060 [US1] Implementar caso de uso `RetrieveCurrentParty` en `backend/src/application/retrieve-current-party.use-case.ts`
+- [ ] T061 [US1] Implementar controlador `POST /sessions` (Initiate, público) y DTO con `class-validator` en `backend/src/interfaces/http/party-authentication/sessions.controller.ts`
+- [ ] T062 [US1] Implementar controlador `GET /sessions/current` (Retrieve, protegido) en `backend/src/interfaces/http/party-authentication/sessions.controller.ts`
+- [ ] T063 [US1] Registrar módulo `PartyAuthenticationModule` con sus puertos e implementaciones en `backend/src/party-authentication.module.ts`
 
-**Checkpoint**: todas las historias funcionan de forma independiente; la pantalla coincide con el diseño
+### Implementación US1 - Frontend
 
----
+- [ ] T064 [US1] Implementar adaptador HTTP de `AuthGateway` con `HttpClient` en `frontend/src/app/infrastructure/auth/http-auth.gateway.ts`
+- [ ] T065 [US1] Implementar caso de uso `LoginUseCase` (valida, llama al puerto, guarda el token) en `frontend/src/app/application/login.use-case.ts`
+- [ ] T066 [US1] Implementar formulario reactivo con campos de email y contraseña, estado con señales y OnPush en `frontend/src/app/presentation/login/login-form.component.ts`
+- [ ] T067 [US1] Implementar vista de bienvenida con nombre, foco en encabezado y botón "Cerrar sesión" en `frontend/src/app/presentation/welcome/welcome.component.ts`
+- [ ] T068 [US1] Implementar estado de carga con botón deshabilitado y `aria-busy` en `frontend/src/app/presentation/login/login-form.component.ts`
+- [ ] T069 [US1] Implementar cierre de sesión que limpia `AuthTokenStore` y regresa al formulario en `frontend/src/app/application/logout.use-case.ts`
+- [X] T070 [US1] Conectar enrutamiento de formulario y bienvenida según estado de sesión. Resuelto sin router: `App` alterna según `SessionStore`, desviación D1 en `plan.md`
 
-## Phase 8: Polish & Cross-Cutting Concerns
-
-**Purpose**: accesibilidad global, documentación y controles de cumplimiento
-
-- [X] T066 [P] Prueba de accesibilidad de la pantalla completa en `src/App.test.tsx`: renderizar `App` con un caso de uso falso y comprobar que no hay violaciones de `axe` en la vista de login, con errores visibles y en la vista de bienvenida (FR-015, SC-005)
-- [X] T067 [P] Prueba de seguridad en `src/ui/features/login/LoginForm.test.tsx`: tras un intento fallido y uno exitoso, la contraseña no aparece en `document.body.textContent`, `window.location.href` ni en llamadas a `console.*` o `Storage.prototype.setItem` (FR-012)
-- [X] T068 [P] Escribir `README.md` en la raíz: descripción, requisitos (Node ≥ 20), configuración de `.env.local` con la advertencia del bundle, scripts (`dev`, `build`, `preview`, `test`, `verify`), estructura por capas, enlace a `specs/001-login-billetera/` y nota sobre las desviaciones de color pendientes de aprobación (Constitución 8.3)
-- [X] T069 Verificar el diseño responsivo con `npm run dev` a 320, 480, 960, 1280 y 1440px: sin scroll horizontal, logo siempre visible y distribución de dos columnas fiel a Figma desde 1280px (FR-018); corregir `src/ui/features/login/LoginScreen.module.css` y `src/ui/layout/BrandPanel/BrandPanel.module.css` si hace falta
-- [X] T070 Comparar visualmente la pantalla a 1440×1024 con la captura de Figma (`get_screenshot` del nodo `2:2`): textos, orden, espaciados, radios y tipografía (SC-006); las únicas diferencias admitidas son los tokens accesibles de research.md R3
-- [X] T071 Ejecutar `npm run verify` y corregir hasta que todos los controles pasen (lint, format, typecheck, cobertura ≥ 80 %, build, audit:deps, audit:licenses, scan:secrets) (Constitución 9.4, SC-003, SC-007)
-- [X] T072 Recorrer los 13 escenarios de `specs/001-login-billetera/quickstart.md` y anotar el resultado; cualquier fallo vuelve a la tarea de la historia correspondiente
-
----
-
-## Dependencies & Execution Order
-
-### Phase Dependencies
-
-- **Setup (Phase 1)**: sin dependencias. T001 → T002 → T003; luego T004–T008 en paralelo; T009 al final
-- **Foundational (Phase 2)**: depende de Setup y bloquea todas las historias. T016/T017 antes que T018/T019; T021 depende de T020; T022 depende de T021
-- **US1 (Phase 3)**: depende de Foundational
-- **US2 (Phase 4)**: depende de US1 (amplía el gateway, el reducer y `LoginForm`)
-- **US3 (Phase 5)**: depende de US1; independiente de US2 a nivel funcional, pero toca los mismos archivos (`loginReducer.ts`, `LoginForm.tsx`), así que conviene hacerla después de US2
-- **US4 (Phase 6)**: depende de US1; T057 se integra mejor después de US3 (propaga `error`)
-- **US5 (Phase 7)**: depende de US1 y de `Alert` (T044, US2)
-- **Polish (Phase 8)**: depende de todas las historias
-
-### Within Each User Story
-
-- Pruebas primero, y deben FALLAR (Principio I)
-- Dominio → infraestructura/aplicación → reducer/hook → componentes → integración
-- Cada historia se cierra con sus pruebas en verde y `npm run lint` limpio
-
-### Parallel Opportunities
-
-- Setup: T004, T005, T006, T007, T008
-- Foundational: T010–T017 y T020
-- US1: pruebas T023–T028 en paralelo; implementación T030–T032 en paralelo
-- US2: T039, T040, T041 en paralelo; T043 y T044 en paralelo
-- US3: T047, T048, T049 en paralelo
-- US5: T058–T060 y T062–T064 en paralelo
-- Polish: T066, T067, T068
+**Punto de control US1**: el flujo feliz funciona de extremo a extremo. Validar con quickstart.md, escenarios 1, 2 y 3.
 
 ---
 
-## Parallel Example: User Story 1
+## Fase 4: Historia de usuario 2 - Retroalimentación ante credenciales inválidas (Prioridad: P1)
 
-```bash
-# Pruebas de US1 en paralelo (archivos distintos):
-Task: "T023 Pruebas de normalizeEmail en src/domain/validation.test.ts"
-Task: "T024 Pruebas de contrato de InMemoryAuthGateway en src/infrastructure/InMemoryAuthGateway.test.ts"
-Task: "T025 Pruebas de loadDemoAccounts en src/infrastructure/loadDemoAccounts.test.ts"
-Task: "T026 Pruebas del caso de uso en src/application/authenticate.test.ts"
-Task: "T027 Pruebas del reducer en src/ui/features/login/loginReducer.test.ts"
-Task: "T028 Pruebas de WelcomeView en src/ui/features/login/WelcomeView.test.tsx"
+**Objetivo**: credenciales incorrectas muestran un mensaje genérico, conservan el correo y limpian la contraseña.
 
-# Implementaciones independientes de US1:
-Task: "T030 normalizeEmail en src/domain/validation.ts"
-Task: "T031 InMemoryAuthGateway en src/infrastructure/InMemoryAuthGateway.ts"
-Task: "T032 loadDemoAccounts en src/infrastructure/loadDemoAccounts.ts"
+**Prueba independiente**: con contraseña incorrecta aparece "Correo o contraseña incorrectos" en el resumen del formulario. El correo se mantiene, la contraseña se limpia y el foco va al campo de contraseña. Al editar un campo, el error desaparece.
+
+### Pruebas US2 (TDD)
+
+- [ ] T071 [P] [US2] [TEST] Escribir prueba de contrato: `POST /sessions` devuelve 401 con mensaje genérico igual para correo inexistente y contraseña incorrecta en `backend/test/integration/sessions.invalid.spec.ts` (regla C1)
+- [ ] T072 [P] [US2] [TEST] Escribir prueba unitaria de equiparación de tiempo: se verifica contra hash señuelo cuando el correo no existe, en `backend/test/unit/application/authenticate-party.spec.ts`
+- [ ] T073 [P] [US2] [TEST] Escribir prueba de contrato: `429` y `503` en `POST /sessions` se asignan a `unavailable` en `frontend/src/app/infrastructure/auth/http-auth.gateway.spec.ts`
+- [ ] T074 [P] [US2] [TEST] Escribir prueba de tiempo de espera de 4500 ms en `frontend/src/app/infrastructure/auth/http-auth.gateway.spec.ts` (regla C5)
+- [ ] T075 [P] [US2] [TEST] Escribir prueba de componente: tras 401, se muestra el error genérico, se conserva el correo, se limpia la contraseña y el foco pasa a contraseña (contracts/ui-login.md)
+- [ ] T076 [P] [US2] [TEST] Escribir prueba de componente: editar un campo limpia `authError`, en `frontend/src/app/presentation/login/login-form.component.spec.ts`
+
+### Implementación US2 - Backend
+
+- [ ] T077 [US2] Implementar respuesta 401 genérica (RFC 9457) para credenciales inválidas en `backend/src/interfaces/http/party-authentication/sessions.controller.ts`
+- [ ] T078 [US2] Implementar comparación contra hash señuelo cuando el correo no existe en `backend/src/application/authenticate-party.use-case.ts` (regla C1)
+- [ ] T079 [US2] Asignar límite de 5 solicitudes por minuto a `POST /sessions` con respuesta 429 en `backend/src/interfaces/http/party-authentication/sessions.controller.ts`
+
+### Implementación US2 - Frontend
+
+- [ ] T080 [US2] Mapear 400, 429, 503, 5xx, error de red y tiempo de espera a `unavailable` en `frontend/src/app/infrastructure/auth/http-auth.gateway.ts`
+- [ ] T081 [US2] Implementar timeout de 4500 ms con `timeout` de RxJS en `frontend/src/app/infrastructure/auth/http-auth.gateway.ts`
+- [ ] T082 [US2] Mostrar error genérico en el resumen y limpiar `authError` al editar un campo en `frontend/src/app/presentation/login/login-form.component.ts`
+- [ ] T083 [US2] Conservar correo, limpiar contraseña y mover foco a contraseña tras 401 en `frontend/src/app/presentation/login/login-form.component.ts`
+
+**Punto de control US2**: el MVP (US1 + US2) queda completo. Validar con quickstart.md, escenarios 4 y 5.
+
+---
+
+## Fase 5: Historia de usuario 3 - Validación de campos (Prioridad: P2)
+
+**Objetivo**: los errores de campo aparecen en blur y al enviar, con resumen accesible que enlaza a cada campo.
+
+**Prueba independiente**: enviar vacío muestra errores de ambos campos, con resumen en la parte superior. Cada enlace del resumen lleva al campo. Al corregir un error, desaparece. Los lectores de pantalla anuncian los errores.
+
+### Pruebas US3 (TDD)
+
+- [ ] T084 [P] [US3] [TEST] Escribir prueba de componente: validación en blur muestra error de email inválido y de contraseña menor a 15 en `frontend/src/app/presentation/login/login-form.component.spec.ts`
+- [ ] T085 [P] [US3] [TEST] Escribir prueba de componente: enviar con errores no llama a `AuthGateway` (FR-006)
+- [ ] T086 [P] [US3] [TEST] Escribir prueba de componente: resumen de errores con enlaces a cada campo y foco en el primer error (FR-005)
+- [ ] T087 [P] [US3] [TEST] Escribir prueba de accesibilidad con axe-core en `frontend/src/app/presentation/login/login-form.a11y.spec.ts`: `aria-describedby` y `aria-invalid` presentes en estado de error
+- [ ] T088 [P] [US3] [TEST] Escribir prueba de componente: el error de un campo desaparece al corregirlo, en `frontend/src/app/presentation/login/login-form.component.spec.ts`
+
+### Implementación US3 - Frontend
+
+- [ ] T089 [US3] Implementar validación al perder foco y al enviar en `frontend/src/app/presentation/login/login-form.component.ts`
+- [ ] T090 [US3] Implementar componente de resumen de errores con enlaces a campos en `frontend/src/app/presentation/login/form-error-summary.component.ts`
+- [ ] T091 [US3] Implementar `aria-describedby`, `aria-invalid` y región `aria-live` para anuncios en `frontend/src/app/presentation/login/login-form.component.ts`
+- [ ] T092 [US3] Implementar enfoque automático en el primer campo con error en `frontend/src/app/presentation/login/login-form.component.ts`
+
+**Punto de control US3**: validación completa y accesible. Validar con quickstart.md, escenarios 6, 7 y 8.
+
+---
+
+## Fase 6: Historia de usuario 4 - Mostrar u ocultar contraseña (Prioridad: P3)
+
+**Objetivo**: un botón permite ver u ocultar la contraseña, usable con teclado y lector de pantalla.
+
+**Prueba independiente**: el botón alterna el tipo del campo entre `password` y `text`, con `aria-pressed` correcto y etiqueta accesible.
+
+### Pruebas US4 (TDD)
+
+- [ ] T093 [P] [US4] [TEST] Escribir prueba de componente del botón de mostrar contraseña en `frontend/src/app/presentation/login/password-field.component.spec.ts`: alterna tipo y `aria-pressed`
+- [ ] T094 [P] [US4] [TEST] Escribir prueba de teclado: el botón recibe foco con Tab y se activa con Espacio y Enter, en `frontend/src/app/presentation/login/password-field.component.spec.ts`
+
+### Implementación US4 - Frontend
+
+- [ ] T095 [US4] Implementar componente `PasswordFieldComponent` con alternancia de visibilidad en `frontend/src/app/presentation/login/password-field.component.ts`
+- [ ] T096 [US4] Integrar `PasswordFieldComponent` en el formulario de inicio de sesión en `frontend/src/app/presentation/login/login-form.component.ts`
+
+**Punto de control US4**: validar con quickstart.md, escenario 9.
+
+---
+
+## Fase 7: Historia de usuario 5 - Elementos fuera de alcance (Prioridad: P3)
+
+**Objetivo**: elementos no implementados informan al usuario sin romper el flujo.
+
+**Prueba independiente**: "¿Olvidaste tu contraseña?", "Continuar con Google", "Continuar con Apple" y "Crear cuenta" muestran "Función no disponible en esta demostración". "Recordarme" cambia visualmente sin afectar la sesión.
+
+### Pruebas US5 (TDD)
+
+- [ ] T097 [P] [US5] [TEST] Escribir prueba de componente: los cuatro elementos fuera de alcance muestran el aviso "Función no disponible en esta demostración" en `frontend/src/app/presentation/login/out-of-scope.component.spec.ts`
+- [ ] T098 [P] [US5] [TEST] Escribir prueba de componente: "Recordarme" alterna su estado visual sin llamar a `AuthGateway`, en `frontend/src/app/presentation/login/login-form.component.spec.ts`
+
+### Implementación US5 - Frontend
+
+- [ ] T099 [US5] Implementar aviso no disponible reutilizable en `frontend/src/app/presentation/login/out-of-scope.component.ts`
+- [ ] T100 [US5] Integrar enlaces y botones fuera de alcance en `frontend/src/app/presentation/login/login-form.component.ts`
+- [ ] T101 [US5] Implementar casilla "Recordarme" solo visual en `frontend/src/app/presentation/login/login-form.component.ts`
+
+**Punto de control US5**: validar con quickstart.md, escenario 10.
+
+---
+
+## Fase N: Pulido y temas transversales
+
+**Objetivo**: documentación, verificación completa, seguridad, accesibilidad y cumplimiento de criterios de éxito.
+
+- [X] T102 [P] Escribir `README.md` raíz con objetivo, arquitectura, requisitos (Node 24) y comandos (documentación obligatoria, Constitución 10.3)
+- [X] T103 [P] Escribir `frontend/README.md` con estructura por capas, scripts, pruebas y accesibilidad
+- [X] T104 [P] Escribir `backend/README.md` con endpoints, variables de entorno, scripts y seguridad
+- [ ] T105 [P] Verificar que `specs/001-login-billetera/quickstart.md` coincide con los scripts y rutas reales. Ajustar comandos si es necesario
+- [ ] T106 Ejecutar `npm run verify` en `backend/` y confirmar cobertura de 80 % o más
+- [ ] T107 Ejecutar `npm run verify` en `frontend/` y confirmar cobertura de 80 % o más
+- [ ] T108 Ejecutar `audit:deps` y `audit:licenses` en ambos proyectos y confirmar cero vulnerabilidades críticas o altas sin remediación
+- [ ] T109 Ejecutar `scan:secrets` en la raíz y confirmar que no hay secretos en el repositorio
+- [ ] T110 Validar layout en las nueve resoluciones de SC-008 con la guía de quickstart.md, escenario 13
+- [ ] T111 Validar contraste WCAG AA en todos los estados con axe-core y revisión manual de `--neutral-border` (B2)
+- [ ] T112 Comparar visualmente con el diseño de Figma (SC-006) y registrar desviaciones en `specs/001-login-billetera/checklists/requirements.md`
+- [ ] T113 Revisar medidas de seguridad OWASP Top 10:2025 contra la tabla de plan.md y documentar cumplimiento en `backend/README.md`
+- [ ] T114 Verificar que las respuestas de la API cumplen el límite de 5 s (FR-021) y registrar tiempos en `specs/001-login-billetera/quickstart.md`
+- [ ] T115 Verificar que ningún código de producción contiene credenciales ni contraseñas en claro (FR-011)
+- [ ] T116 Verificar que el token JWT no se guarda en `localStorage` ni `sessionStorage` (regla C6)
+- [ ] T117 Revisar trazabilidad FR/SC contra tests y registrarla en `specs/001-login-billetera/checklists/requirements.md`
+- [ ] T118 Ejecutar el escenario completo de quickstart.md (escenarios 1 a 14) y registrar resultados
+- [X] T119 Eliminar el código legado de `src/` (aprobado por el usuario, B4) y limpiar referencias en `README.md` raíz
+
+---
+
+## Dependencias
+
+### Orden de finalización de historias
+
+```text
+Fase 1 (Setup)
+   │
+   ▼
+Fase 2 (Foundational) ── bloquea todas las historias
+   │
+   ├──► Fase 3 (US1, P1) 🎯 MVP
+   │         │
+   │         ▼
+   ├──► Fase 4 (US2, P1)   (depende de US1: usa el mismo formulario y gateway)
+   │         │
+   │         ▼
+   ├──► Fase 5 (US3, P2)   (depende de US1: extiende el formulario)
+   │
+   ├──► Fase 6 (US4, P3)   (independiente de US2 y US3 tras la Fase 2)
+   └──► Fase 7 (US5, P3)   (independiente tras la Fase 2)
+            │
+            ▼
+Fase N (Pulido)
 ```
 
+### Dependencias de tareas relevantes
+
+- T018–T022 (pruebas backend) deben fallar antes de T023–T038.
+- T039–T042 (pruebas frontend) deben fallar antes de T043–T051.
+- T023 bloquea T031, T032 y T033, porque todas leen configuración.
+- T027 a T029 (puertos) bloquean T059 y T060 (casos de uso).
+- T045 (puerto `AuthGateway`) bloquea T064 y T065.
+- T066 bloquea T068, T089 y T095, porque todos modifican el mismo componente.
+- T048 y T051 bloquean las historias de frontend con estilos.
+- T102 a T104 no dependen de ninguna otra tarea y pueden empezar desde la Fase 1.
+
+## Ejemplos de ejecución en paralelo
+
+### Fase 2 (backend)
+
+```text
+# Pruebas en paralelo:
+T019 Reglas de credenciales (credentials.spec.ts)
+T020 Hash scrypt (password-hash.spec.ts)
+T021 Arquitectura de capas (architecture.spec.ts)
+T022 EnvPartyDirectory (env-party-directory.spec.ts)
+
+# Implementación en paralelo tras las pruebas:
+T024 Party (party.ts)
+T025 Credenciales (credentials.ts)
+T026 AuthOutcome (auth-outcome.ts)
+```
+
+### Fase 3 (US1)
+
+```text
+# Pruebas en paralelo:
+T052 Caso de uso (authenticate-party.spec.ts)
+T053 Initiate (sessions.initiate.spec.ts)
+T054 Retrieve (sessions.retrieve.spec.ts)
+T055 Formulario (login-form.component.spec.ts)
+T057 Bienvenida (welcome.component.spec.ts)
+```
+
+### Fases 6 y 7
+
+```text
+# Ambas historias P3 pueden desarrollarse en paralelo por personas distintas:
+T093 y T094 (US4)
+T097 y T098 (US5)
+```
+
+## Estrategia de implementación
+
+### MVP primero (solo US1 y US2)
+
+1. Completar Fase 1 (Setup).
+2. Completar Fase 2 (Foundational). Es el bloqueo principal.
+3. Completar Fase 3 (US1) y validar el flujo feliz.
+4. Completar Fase 4 (US2) y validar los errores de credenciales.
+5. **Detenerse y validar el MVP** con quickstart.md, escenarios 1 a 5.
+
+### Entrega incremental
+
+1. MVP (US1 + US2).
+2. Añadir US3 (validación de campos, P2).
+3. Añadir US4 y US5 (P3).
+4. Completar Fase N (Pulido) antes de dar por cerrada la funcionalidad.
+
+### Principio TDD
+
+En cada tarea `[TEST]`, escribir la prueba primero, ejecutarla y verificar que falla por la razón esperada. Después implementar la tarea de código correspondiente hasta que pase.
+
 ---
 
-## Implementation Strategy
+## Resumen de formato
 
-### MVP First (User Story 1 Only)
-
-1. Completar Phase 1 (Setup) y Phase 2 (Foundational)
-2. Completar Phase 3 (US1)
-3. **DETENERSE Y VALIDAR**: quickstart escenarios 1–3
-4. Demostrar el MVP
-
-### Incremental Delivery
-
-1. Setup + Foundational → base lista
-2. US1 → acceso exitoso (MVP)
-3. US2 → error genérico (completa el requerimiento central del usuario)
-4. US3 → validación de campos
-5. US4 → visibilidad de la contraseña
-6. US5 → fidelidad completa al diseño
-7. Polish → `npm run verify` en verde y revisión de código antes de integrar (Constitución 9.3)
-
----
-
-## Notes
-
-- [P] = archivos distintos, sin dependencias pendientes
-- La etiqueta [USn] y los IDs en los nombres de las pruebas dan la trazabilidad requisito → prueba (9.2)
-- Hacer commit al cerrar cada tarea o grupo lógico, referenciando el ID de la tarea
-- Decisiones pendientes que pueden cambiar tareas: (a) si se aprueba la excepción para definir las cuentas en el código, solo cambian T007, T025, T032 y T038; (b) si diseño rechaza los tokens accesibles, cambia T010 y debe resolverse el incumplimiento de WCAG; (c) si se incluye bloqueo por intentos fallidos, se agregan tareas a US2
+- Total de tareas: 119
+- Fase 1 (Setup): T001–T017 (17)
+- Fase 2 (Foundational): T018–T051 (34)
+- Fase 3 (US1): T052–T070 (19)
+- Fase 4 (US2): T071–T083 (13)
+- Fase 5 (US3): T084–T092 (9)
+- Fase 6 (US4): T093–T096 (4)
+- Fase 7 (US5): T097–T101 (5)
+- Fase N (Pulido): T102–T119 (18)
+- Todas las tareas usan la forma `- [ ] TNNN [P?] [USn?] descripción con ruta`.

@@ -31,6 +31,12 @@
 
 ## Notes
 
+- Iteración 2 (actualización de seguridad, responsive, mock de API y look & feel): todos los ítems
+  pasan. Cambios: contraseña de 15 a 128 caracteres (NIST SP 800-63B-4), regex de correo más
+  estricta (FR-003), resumen de errores (FR-005), API mockeada con contrato REST y token simulado
+  (FR-007), rangos responsive smartphone/tablet/escritorio (FR-018), referencia a la imagen adjunta
+  y contraseña de contraste (FR-020), tiempo de respuesta menor a 5 s (FR-021, SC-009) y criterios
+  SC-008 y SC-010.
 - Validado en la iteración 1; todos los ítems pasan.
 - Decisiones tomadas por defecto (documentadas en Assumptions): contraseña de 8–128 caracteres,
   mensaje de error genérico, elementos fuera de alcance con aviso informativo, "Recordarme" sin

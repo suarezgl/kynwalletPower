@@ -1,6 +1,7 @@
 # Contract: Interfaz de usuario de la pantalla de login
 
-Contrato observable por el usuario y por las pruebas (RTL consulta por rol y nombre accesible).
+Contrato observable por el usuario y por las pruebas de componentes (las consultas se hacen por
+rol y nombre accesible, no por clases CSS). Stack: Angular 22 (ver [plan.md](../plan.md)).
 Textos exactos en español, tal como figuran en el diseño de Figma (nodo `2:2`) y en la spec.
 
 ## Vista de inicio de sesión

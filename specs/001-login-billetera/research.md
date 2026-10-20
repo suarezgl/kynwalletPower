@@ -1,27 +1,47 @@
 # Research: Pantalla de Inicio de Sesión de KynWallet
 
-**Feature**: `001-login-billetera` | **Date**: 2026-10-14
+**Feature**: `001-login-billetera` | **Date**: 2026-10-19
 
-Todas las incógnitas del Technical Context quedan resueltas aquí.
+Todas las incógnitas del Technical Context quedan resueltas aquí. Las versiones se verificaron
+en las fuentes oficiales a la fecha indicada; deben confirmarse de nuevo al crear los proyectos.
 
-## R1. Stack base
+## R1. Arquitectura desacoplada y versiones (ADR candidato)
 
-- **Decision**: React 19 + TypeScript 5.x (modo `strict`) + Vite 8, Node.js ≥ 20 LTS
-  (en la implementación se usó Vite 8 en lugar de 7 por compatibilidad con `@vitejs/plugin-react`).
-- **Rationale**: stack solicitado por el usuario; Vite ofrece arranque y build rápidos sin
-  configuración adicional; TypeScript estricto refuerza contratos entre capas (Principio III).
-- **Alternatives considered**: Next.js (SSR/rutas innecesarias para una sola pantalla, viola
-  YAGNI); Create React App (sin mantenimiento activo, incumple 7.1.b).
+- **Decision**: frontend en Angular 22 (LTS) y backend en NestJS 12 sobre Node.js 24 LTS.
+  Comunicación exclusiva por REST (Constitución 7.2). Dos proyectos hermanos en el repositorio.
+- **Estado de soporte verificado (2026-10-19)**:
+  - Angular 22: lanzado el 3-jun-2026; soporte activo hasta el 30-jun-2027 y LTS hasta el
+    30-jun-2028. Es la línea vigente más reciente.
+  - Angular 21: LTS hasta el 30-jun-2027. Alternativa válida si se prefiere una línea ya
+    madura.
+  - Angular 20: LTS hasta el 28-nov-2026; **no usar** para un proyecto nuevo.
+  - NestJS 12.1.x: versión vigente; ESM; requiere Node.js 20.19+ o 22.12+ para el runtime, y
+    22.22.3+, 24.15+ o 26+ para la CLI.
+  - Node.js 22: LTS hasta abril de 2027 (sin "superior a 22"). Node.js 24: LTS (Krypton), soporte
+    hasta alrededor de 2028. Node.js 26: Current (mayo de 2026), sin LTS aún.
+- **Rationale**: "superior a 22" se cumple con 24 LTS, que es la línea de soporte largo. Angular 22
+  LTS ofrece soporte hasta 2028, mientras que el proyecto debe mantenerse con soporte vigente
+  (Constitución 9.1.d). El desacoplamiento cumple Principios III y VII.
+- **Alternatives considered**:
+  - Node.js 26: válido por ser superior a 22, pero es Current y no LTS; se descarta para
+    producción y se deja como opción del usuario.
+  - Angular 21 LTS: soporte hasta 2027; válido pero más corto.
+  - Angular 20: fin de LTS en 2026; incumple 9.1.d.
+  - NestJS 11: funcional, pero 12 es la línea vigente.
+  - Monolito con API embebida en Angular (SSR): acopla despliegue; incumple el pedido de
+    desacoplamiento.
+- **ADR**: esta decisión se registrará como ADR en `docs/adr/` durante la implementación (10.3).
 
-## R2. Estilos y tokens de diseño
+## R2. Estilos, tokens de diseño y tipografía
 
-- **Decision**: CSS Modules por componente + un archivo global de tokens como CSS custom
-  properties, con los nombres de las variables de Figma (`--neutral-0`, `--neutral-900`,
-  `--brand-500`, `--brand-600`, etc.). Tipografía Inter autoalojada con `@fontsource-variable/inter`.
-- **Rationale**: cero dependencias de runtime; los tokens replican 1:1 las variables de Figma
-  (fuente única, DRY); Inter local evita peticiones a terceros.
-- **Alternatives considered**: Tailwind (el MCP de Figma lo genera por defecto, pero añade
-  dependencia y configuración no requeridas); CSS-in-JS (costo de runtime innecesario).
+- **Decision**: estilos del frontend con CSS nativo y variables CSS en `tokens.css`, con los
+  nombres de las variables de Figma (`--neutral-0`, `--neutral-900`, `--brand-500`, `--brand-600`,
+  etc.). Estilos por componente con los estilos de componente de Angular (encapsulación nativa).
+  Tipografía Inter autoalojada con `@fontsource-variable/inter`.
+- **Rationale**: cero dependencias de UI; los tokens replican 1:1 las variables de Figma (fuente
+  única, DRY); Inter local evita peticiones a terceros.
+- **Alternatives considered**: Angular Material (sistema de diseño ajeno, peso alto para dos
+  pantallas, YAGNI); Tailwind (dependencia y configuración no requeridas).
 
 **Tokens extraídos de Figma (`get_variable_defs`, nodo 2:2)**:
 
@@ -38,12 +58,12 @@ Todas las incógnitas del Technical Context quedan resueltas aquí.
 
 Valores sin variable (de `get_design_context`): degradado del panel de marca
 `linear-gradient(121.19deg, #ff8a65 0%, #ef5226 70.71%)`; tarjeta `rgba(255,255,255,.16)` con borde
-`rgba(255,255,255,.35)`, radio 22px; chip `rgba(255,217,128,.9)`; radios de input/botón 12px;
-alto de input/botón 52px, sociales 48px; gap del formulario 22px; ancho del formulario 400px;
+`rgba(255,255,255,.35)`, radio 22px; chip `rgba(255,217,128,.9)`; radios de input y botón 12px;
+alto de input y botón 52px, sociales 48px; gap del formulario 22px; ancho del formulario 400px;
 panel de marca 620px con padding 64/56px. Tipografía: título 30px Bold, titular 44px Bold
 (line-height 1.08), cuerpo 16–17px Regular, etiquetas 14px Medium, botón 16px SemiBold.
 
-## R3. Contraste de color frente a WCAG 2.1 AA (Constitución 8.4)
+## R3. Contraste de color frente a WCAG 2.1 AA (Constitución 10.4)
 
 Medición de contraste sobre blanco de los tokens del diseño:
 
@@ -59,98 +79,108 @@ Medición de contraste sobre blanco de los tokens del diseño:
 - **Decision**: conservar los tokens de Figma y añadir tokens accesibles derivados, usados solo
   donde el original no cumple: `--brand-700: #d04721` (4.56:1, botón y enlaces),
   `--neutral-600: #73748b` (4.57:1, textos secundarios y placeholder),
-  `--neutral-border: #92949c` (3.03:1, bordes de controles). El matiz de los colores se mantiene;
-  solo se oscurecen.
-- **Rationale**: la Constitución exige AA como OBLIGATORIO (8.4) y la desviación del sistema de
-  diseño requiere aprobación (8.6); ajustar la luminosidad es el menor cambio visual que cumple.
-- **Alternatives considered**: reproducir los colores exactos (incumple 8.4 y SC-005); texto
-  oscuro sobre el naranja (cambia más la identidad visual).
-- **Pending**: aprobación del responsable de diseño (registrado en Complexity Tracking del plan).
+  `--neutral-border: #92949c` (3.03:1, bordes de controles). El matiz se mantiene; solo se
+  oscurecen.
+- **Rationale**: 10.4 es obligatorio y la desviación del sistema de diseño requiere aprobación
+  (10.6); ajustar la luminosidad es el menor cambio visual que cumple.
+- **Alternatives considered**: colores exactos (incumple 10.4 y SC-005); texto oscuro sobre el
+  naranja (cambia más la identidad visual).
+- **Pending**: aprobación del responsable de diseño (Complexity Tracking del plan).
 
 ## R4. Origen de las cuentas de demostración
 
 - **Conflicto**: el usuario pidió "usuarios ficticios predefinidos en el código"; la Constitución
   5.3 y FR-011 prohíben credenciales en el código fuente y en archivos versionados.
-- **Decision**: las cuentas se leen de la variable `VITE_DEMO_USERS` (JSON) definida en
-  `.env.local`, archivo no versionado. Se versiona `.env.example` con valores de ejemplo
-  marcados como tales. Un adaptador de infraestructura valida y convierte esa configuración;
-  si falta o es inválida, la pantalla muestra "Servicio de acceso no disponible…" (caso límite de
-  la spec).
-- **Rationale**: cumple 5.3 sin backend; el dominio recibe las cuentas por inyección
-  (`AuthGateway`), así que cambiar el origen afecta un único archivo.
-- **Nota de transparencia**: en una aplicación solo-cliente, cualquier valor `VITE_*` queda
-  visible en el bundle generado. Es aceptable porque son cuentas ficticias sin acceso real, y se
-  documenta en el quickstart.
-- **Alternatives considered**: arreglo en el código (incumple 5.3, solo viable con una excepción
-  aprobada según 9.1); hash de contraseñas en el código (sigue siendo material de credenciales
-  versionado y añade complejidad).
-- **Datos de prueba**: las pruebas usan cuentas ficticias construidas en los propios tests y
-  pasadas por inyección; no corresponden a ningún sistema real.
+- **Decision**: el backend lee `DEMO_ACCOUNTS` (JSON) desde variables de entorno. Cada cuenta
+  contiene `email`, `displayName` y `passwordHash` en formato `scrypt$N$r$p$salt$hash`. Nunca
+  hay contraseñas en claro. Un script `npm run hash-password` genera el hash. `.env` no se
+  versiona; `.env.example` contiene solo valores ficticios.
+- **Validación al arranque**: si `DEMO_ACCOUNTS` falta, es inválido o tiene correos repetidos,
+  el backend no arranca (fail fast) y la API responde 503 si se consulta sin configuración válida.
+- **Rationale**: cumple 5.3 sin base de datos; el dominio recibe las cuentas por el puerto
+  `PartyDirectory`, así que cambiar el origen afecta un único archivo.
+- **Alternatives considered**: hash en el código (sigue siendo material de credenciales
+  versionado); base de datos (YAGNI para una demo).
 
-## R5. Simulación de autenticación
+## R5. Simulación de la API y latencia
 
-- **Decision**: `InMemoryAuthGateway` implementa el puerto `AuthGateway`; compara el correo
-  normalizado (trim + minúsculas) y la contraseña exacta, y responde tras una espera de 1000 ms
-  configurable. La espera se inyecta para que las pruebas la controlen con temporizadores
-  falsos.
-- **Rationale**: cumple FR-007/FR-008 y mantiene las pruebas deterministas.
-- **Alternatives considered**: MSW simulando una API (simula una red que el alcance excluye,
-  viola YAGNI).
+- **Decision**: el backend simula la API de *Party Authentication* con un directorio en
+  configuración y una espera `SIMULATED_LATENCY_MS` (1000 por defecto; validación de 0 a 4000).
+  La espera se inyecta como puerto para que las pruebas unitarias no esperen en tiempo real.
+- **Rationale**: cumple FR-007 (API mockeada) con comportamiento realista y medible frente a
+  8.1 (< 5 s).
+- **Alternatives considered**: MSW en el navegador (simula una red que el alcance no necesita y
+  no ejercita JWT ni validación del lado servidor); json-server (no permite JWT ni problem details
+  sin código propio).
 
-## R6. Gestión de estado del formulario
+## R6. Formularios y estado en Angular
 
-- **Decision**: hook propio `useLoginForm` sobre `useReducer` con una máquina de estados
-  explícita (`idle → submitting → success | failure | unavailable`) y errores por campo. Las
-  validaciones son funciones puras del dominio.
-- **Rationale**: dos campos no justifican una librería (KISS/YAGNI); un reducer puro es fácil de
-  probar.
-- **Alternatives considered**: React Hook Form + Zod (dependencias innecesarias para dos campos).
+- **Decision**: formularios reactivos de Angular (`FormGroup`, `Validators` personalizados que
+  delegan en las funciones puras de `login-validation.ts`). Estado de la vista con signals en
+  `login-form.state.ts`, con una máquina de estados explícita:
+  `editing → submitting → authError | welcome`.
+- **Rationale**: los formularios reactivos ya forman parte de Angular (sin dependencia extra,
+  Principio IV); los signals son el estado nativo recomendado por Angular 22.
+- **Alternatives considered**: NgRx (estado global innecesario para una pantalla, YAGNI); formularios
+  basados en plantillas (menos testables y con validación menos explícita).
 
-## R7. Validación de correo
+## R7. Validación de formulario y reglas de seguridad
 
-- **Decision**: correo normalizado no vacío, ≤ 254 caracteres, que cumpla
-  `^[^\s@]+@[^\s@]+\.[^\s@]{2,}$`. Contraseña sin recortar, longitud 8–128.
-- **Rationale**: cubre los casos de la spec ("usuario@", "usuario.com") sin la complejidad de
-  RFC 5322 completo.
+- **Decision**:
+  - Correo: normalizado (trim y minúsculas), no vacío, ≤ 254 caracteres y con la expresión
+    `^[^\s@]+@[^\s@]+\.[^\s@]{2,}$`. Se rechazan espacios y caracteres de control.
+  - Contraseña: 15–128 caracteres, sin recortar y sin reglas de composición, según NIST SP
+    800-63B-4 para autenticación de un solo factor (spec, FR-004).
+  - Las mismas reglas se aplican en backend (`class-validator`) como defensa en profundidad (5.1).
+- **Rationale**: cubre los casos de la spec sin la complejidad de RFC 5322 completo; el límite
+  superior evita ataques de denegación por hash de contraseñas largas.
+- **Alternatives considered**: RFC 5322 completo (regex ilegible, bajo valor); reglas de
+  composición obligatorias (desaconsejadas por NIST).
 
-## R8. Pruebas y calidad
+## R8. Pruebas, cobertura y herramientas
 
-- **Decision**: Vitest 5 + React Testing Library + `@testing-library/user-event` + `jsdom`;
-  `axe-core` con un helper propio (`vitest-axe` se descartó por falta de mantenimiento, 7.1.b)
-  para comprobar accesibilidad en las pruebas de componentes; cobertura con
-  `@vitest/coverage-v8` y umbral del 80 % en líneas y ramas. ESLint 9 (flat config) con
-  `typescript-eslint`, `eslint-plugin-react-hooks` y `eslint-plugin-jsx-a11y`; Prettier.
-- **Rationale**: Vitest comparte la configuración de Vite; RTL prueba comportamiento observable
-  por el usuario (Given/When/Then de la spec).
-- **Alternatives considered**: Jest (requiere transformaciones extra con Vite); Playwright E2E (el
-  usuario pidió "pruebas básicas"; se pospone, YAGNI).
+- **Decision**:
+  - Frontend: Vitest + TestBed + `@testing-library/angular` (opcional, decidir en la
+    implementación; si no se usa, TestBed basta), `@testing-library/user-event`, `axe-core` con un
+    helper propio (`vitest-axe` se descarta por falta de mantenimiento, 9.1.b),
+    `@vitest/coverage-v8`, umbral 80 %.
+  - Backend: Jest (plantilla oficial de NestJS), `supertest` para integración, umbral 80 %.
+  - Lint: `angular-eslint` y `typescript-eslint` con reglas de dependencias entre capas; Prettier
+    en ambos.
+  - Análisis: `npm audit --audit-level=high` y `license-checker-rseidelsohn` con lista blanca
+    (MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, 0BSD, OFL-1.1, CC0-1.0, BlueOak-1.0.0);
+    `secretlint` en la raíz.
+- **Rationale**: cada herramienta es la estándar de su framework (KISS) y mantenida. Los scripts
+  `verify` hacen verificables los controles de 11.4 mientras no exista CI.
+- **Note**: el directorio aún no es un repositorio git; las reglas de revisión (11.3) requieren
+  inicializarlo antes de integrar cambios.
 
-## R9. Controles de cumplimiento (Constitución 9.4)
+## R9. Seguridad de la API (OWASP Top 10:2025)
 
-- **Decision**: scripts npm `lint`, `typecheck`, `test`, `test:coverage`, `build`,
-  `audit:deps` (`npm audit --audit-level=high`), `audit:licenses`
-  (`license-checker-rseidelsohn` con lista de licencias permitidas: MIT, ISC, BSD-2-Clause,
-  BSD-3-Clause, Apache-2.0, 0BSD, OFL-1.1, CC0-1.0, BlueOak-1.0.0) y `scan:secrets`
-  (`secretlint`). Un script `verify` los ejecuta todos en secuencia.
-- **Rationale**: hace verificables localmente los controles obligatorios mientras no exista
-  pipeline de CI.
-- **Note**: el directorio no es todavía un repositorio git; las reglas de revisión (9.3)
-  requieren inicializarlo antes de integrar cambios.
+- **Decision**:
+  - JWT HS256, secreto `JWT_SECRET` ≥ 32 caracteres desde entorno; `iss`, `aud`, `exp` (900 s);
+    algoritmo fijado al verificar.
+  - Comparación de contraseñas con `crypto.scrypt` y `timingSafeEqual`; si el correo no existe se
+    verifica contra un hash ficticio para igualar el tiempo de respuesta (A07).
+  - Límite de tasa con `@nestjs/throttler`: 5 intentos por minuto por IP en el inicio de sesión;
+    respuesta 429 (A07).
+  - `helmet`; `X-Powered-By` desactivado; CORS deshabilitado (mismo origen con proxy en
+    desarrollo, A02).
+  - Filtro global de excepciones que devuelve `application/problem+json` (RFC 9457) sin detalles
+    internos (A10).
+  - Logs estructurados de intentos fallidos sin contraseña ni token (A09, 10.7).
+- **Rationale**: cubre OWASP Top 10:2025 con dependencias mínimas; los controles son verificables
+  en pruebas de integración.
+- **Alternatives considered**: `argon2` (dependencia nativa adicional; scrypt cumple OWASP y está
+  en Node); refresh tokens (YAGNI para la demo, el token es de vida corta).
 
 ## R10. Diseño responsivo
 
-- **Decision**: primero móvil, con dos puntos de corte. Por debajo de 960px el panel de marca se
-  reduce a una cabecera con el logo (se ocultan el titular y la tarjeta) y el formulario ocupa el
-  ancho disponible (máx. 400px). Por debajo de 480px se aplica padding lateral de 16px. Desde
-  960px se usa la distribución del diseño en dos columnas (marca 620px fija para ≥ 1280px y 43 %
-  entre 960 y 1280px).
-- **Rationale**: cumple FR-018 (320px sin scroll horizontal) y conserva el logo visible.
-
-## R11. Recursos gráficos
-
-- **Decision**: descargar en la implementación los SVG del diseño (logo, icono de visibilidad,
-  iconos sociales) con las URL que devuelve `get_design_context` y guardarlos en `src/assets/`.
-  Las URL temporales caducan a los 7 días: si caducaron, se vuelve a ejecutar
-  `get_design_context` sobre el nodo `2:2`.
-- **Note**: en Figma los iconos de Google, Apple y del control de visibilidad son elipses de
-  marcador de posición; se reproducen tal cual, sin sustituirlos por logotipos de marca.
+- **Decision**: puntos de quiebre según FR-018: smartphone 320–767 px (una columna), tablet
+  768–1023 px y escritorio ≥ 1024 px. El panel de marca se oculta por debajo de 960 px y solo se
+  muestra el logo. Unidades fluidas (`rem`, `%`, `clamp`) en lugar de anchos fijos; el formulario
+  tiene ancho máximo de 400 px.
+- **Verificación**: pruebas automatizadas de layout (sin scroll horizontal) en 320, 768, 1024 y
+  1440 px, más revisión visual manual (10.4).
+- **Alternatives considered**: CSS Grid con un solo breakpoint (no cubre tableta); librerías de
+  grid (dependencia innecesaria).

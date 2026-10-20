@@ -1,0 +1,23 @@
+/* Tokens del diseño y estilos globales. Fuente Inter con @fontsource-variable/inter (autoalojada). */
+@import '@fontsource-variable/inter';
+@import './styles/tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-width: 320px;
+  overflow-x: hidden;
+  background: var(--neutral-0);
+}
+
+body {
+  font-family: 'Inter Variable', Inter, system-ui, sans-serif;
+  color: var(--neutral-900);
+  -webkit-font-smoothing: antialiased;
+}

@@ -1,0 +1,47 @@
+.welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+h1 {
+  margin: 0;
+  font-size: 28px;
+  color: var(--neutral-900);
+}
+
+h1:focus {
+  outline: none;
+}
+
+h1:focus-visible {
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-control);
+}
+
+p {
+  margin: 0;
+  color: var(--neutral-700);
+}
+
+.logout {
+  height: var(--control-height);
+  padding: 0 24px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--brand-700);
+  color: var(--neutral-0);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.logout:hover {
+  background: var(--brand-800);
+}
+
+.logout:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
